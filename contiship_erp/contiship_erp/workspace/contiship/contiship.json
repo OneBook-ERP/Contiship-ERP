@@ -1,0 +1,69 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"OttwQQUFJu\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Contiship</span>\",\"col\":12}},{\"id\":\"xJ2O_Qjj-l\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"XCKr78c2Ef\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"Vn6SpMRMX7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Consignment\",\"col\":3}},{\"id\":\"t6Kmysd-or\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inward Entry\",\"col\":3}},{\"id\":\"eGqn7Tw7xg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Outward Entry\",\"col\":3}},{\"id\":\"9ZM_NmquUd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Repacking Entry\",\"col\":3}}]",
+ "creation": "2025-06-10 23:39:06.191757",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Contiship",
+ "links": [],
+ "modified": "2025-06-11 07:12:01.199912",
+ "modified_by": "Administrator",
+ "module": "ContiShip ERP",
+ "name": "Contiship",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Inward Entry",
+   "link_to": "Inward Entry",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Outward Entry",
+   "link_to": "Outward Entry",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Repacking Entry",
+   "link_to": "Repacking Entry",
+   "stats_filter": "[[\"Repacking Entry\",\"name\",\"=\",null,false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Customer",
+   "link_to": "Customer",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Consignment",
+   "link_to": "Consignment",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "Contiship"
+}

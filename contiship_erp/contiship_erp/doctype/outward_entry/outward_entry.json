@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-06-06 00:11:43.205912",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "consignment",
+  "container",
+  "column_break_objw",
+  "date",
+  "vehicle_no",
+  "section_break_ayvx",
+  "items",
+  "section_break_ttjw",
+  "add_on_services_outward"
+ ],
+ "fields": [
+  {
+   "fieldname": "consignment",
+   "fieldtype": "Link",
+   "label": "Consignment",
+   "options": "Consignment"
+  },
+  {
+   "fieldname": "container",
+   "fieldtype": "Link",
+   "label": "Container",
+   "options": "Container Entry"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Data",
+   "label": "Vehicle No"
+  },
+  {
+   "fieldname": "column_break_objw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ayvx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Outward Entry Items"
+  },
+  {
+   "fieldname": "section_break_ttjw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "add_on_services_outward",
+   "fieldtype": "Table",
+   "label": "Add on Services Outward",
+   "options": "Add On Services"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-06-10 23:23:26.059733",
+ "modified_by": "Administrator",
+ "module": "ContiShip ERP",
+ "name": "Outward Entry",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

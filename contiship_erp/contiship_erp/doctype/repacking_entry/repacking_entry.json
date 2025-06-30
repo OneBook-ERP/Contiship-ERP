@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-06-06 00:18:38.952782",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "consignment",
+  "column_break_wwct",
+  "container",
+  "column_break_ugum",
+  "repacked_date",
+  "items_section",
+  "repacked_items"
+ ],
+ "fields": [
+  {
+   "fieldname": "consignment",
+   "fieldtype": "Link",
+   "label": "Consignment",
+   "options": "Consignment"
+  },
+  {
+   "fieldname": "container",
+   "fieldtype": "Link",
+   "label": "Container",
+   "options": "Container Entry"
+  },
+  {
+   "fieldname": "column_break_wwct",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ugum",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "repacked_date",
+   "fieldtype": "Date",
+   "label": "Repacked Date"
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "repacked_items",
+   "fieldtype": "Table",
+   "label": "Repacked Items",
+   "options": "Outward Entry Items"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-06-10 23:21:06.208119",
+ "modified_by": "Administrator",
+ "module": "ContiShip ERP",
+ "name": "Repacking Entry",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

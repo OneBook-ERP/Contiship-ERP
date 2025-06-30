@@ -1,0 +1,104 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:CNSM-{YY}-{####}",
+ "creation": "2025-06-05 23:49:36.800741",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "column_break_puvn",
+  "date",
+  "final_invoice_link",
+  "invoice_generated",
+  "section_break_rvfb",
+  "container_entry"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "default": "0",
+   "fieldname": "invoice_generated",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Invoice Generated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "final_invoice_link",
+   "fieldtype": "Link",
+   "label": "Final Invoice Link",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_puvn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_rvfb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "container_entry",
+   "fieldtype": "Table",
+   "label": "Container Entry",
+   "options": "Container Entry"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "group": "Linked Doctypes",
+   "link_doctype": "Inward Entry",
+   "link_fieldname": "consignment"
+  },
+  {
+   "group": "Linked Doctypes",
+   "link_doctype": "Outward Entry",
+   "link_fieldname": "consignment"
+  },
+  {
+   "group": "Linked Doctypes",
+   "link_doctype": "Repacking Entry",
+   "link_fieldname": "consignment"
+  }
+ ],
+ "modified": "2025-06-11 07:06:06.738462",
+ "modified_by": "Administrator",
+ "module": "ContiShip ERP",
+ "name": "Consignment",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
