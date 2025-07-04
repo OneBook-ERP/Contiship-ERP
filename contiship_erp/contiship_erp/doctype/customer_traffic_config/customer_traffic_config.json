@@ -13,14 +13,9 @@
   "rate",
   "after_75_discounted_rate",
   "section_break_jilm",
-  "container_20_ft",
-  "container_40_ft",
+  "container_feet",
   "column_break_yito",
-  "ton_sqft",
-  "container_based_sqft",
-  "80_ton",
-  "40_ton",
-  "column_break_cggn",
+  "ton_based",
   "ton_based_sqft",
   "container_sqft"
  ],
@@ -70,55 +65,10 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.container_20_ft == 1 || doc.container_40_ft ==1",
    "fetch_from": "service_type.custom_20_ft",
    "fieldname": "container_sqft",
    "fieldtype": "Data",
    "label": "Container Sqft"
-  },
-  {
-   "default": "0",
-   "fetch_from": "service_type.custom_20_ft",
-   "fieldname": "container_20_ft",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Container 20 ft"
-  },
-  {
-   "default": "0",
-   "fetch_from": "service_type.custom_40_ft",
-   "fieldname": "container_40_ft",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Container 40 ft"
-  },
-  {
-   "default": "0",
-   "fetch_from": "service_type.custom_ton_based_sqft",
-   "fieldname": "ton_sqft",
-   "fieldtype": "Check",
-   "label": "Ton Sqft"
-  },
-  {
-   "default": "0",
-   "fetch_from": "service_type.custom_container_based_sqft",
-   "fieldname": "container_based_sqft",
-   "fieldtype": "Check",
-   "label": "Container Based Sqft"
-  },
-  {
-   "default": "0",
-   "fetch_from": "service_type.custom_80_ton",
-   "fieldname": "80_ton",
-   "fieldtype": "Check",
-   "label": "80 Ton"
-  },
-  {
-   "default": "0",
-   "fetch_from": "service_type.custom_40_ton",
-   "fieldname": "40_ton",
-   "fieldtype": "Check",
-   "label": "40 Ton"
   },
   {
    "fieldname": "ton_based_sqft",
@@ -126,15 +76,21 @@
    "label": "Ton Based Sqft"
   },
   {
-   "fieldname": "column_break_cggn",
-   "fieldtype": "Column Break"
+   "fieldname": "container_feet",
+   "fieldtype": "Int",
+   "label": "Container Feet"
+  },
+  {
+   "fieldname": "ton_based",
+   "fieldtype": "Int",
+   "label": "Sqft Based Type"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-15 22:22:18.478336",
+ "modified": "2025-07-03 22:34:09.799724",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Customer Traffic Config",
