@@ -1,12 +1,12 @@
 frappe.ui.form.on("Item", {
     refresh: function(frm) {
         // Set initial visibility for all fields
-        set_initial_visibility(frm);
+        // set_initial_visibility(frm);
     },
     
     onload: function(frm) {
         // Also set visibility when form first loads
-        set_initial_visibility(frm);
+        // set_initial_visibility(frm);
     }
 });
 

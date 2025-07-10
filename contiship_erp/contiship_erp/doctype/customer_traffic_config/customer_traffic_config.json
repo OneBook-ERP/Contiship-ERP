@@ -14,10 +14,11 @@
   "after_75_discounted_rate",
   "section_break_jilm",
   "container_feet",
+  "square_feet_size",
+  "ton_size",
   "column_break_yito",
-  "ton_based",
-  "ton_based_sqft",
-  "container_sqft"
+  "add_on_type",
+  "add_on_service"
  ],
  "fields": [
   {
@@ -65,32 +66,36 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "service_type.custom_20_ft",
-   "fieldname": "container_sqft",
-   "fieldtype": "Data",
-   "label": "Container Sqft"
-  },
-  {
-   "fieldname": "ton_based_sqft",
-   "fieldtype": "Int",
-   "label": "Ton Based Sqft"
-  },
-  {
    "fieldname": "container_feet",
    "fieldtype": "Int",
-   "label": "Container Feet"
+   "label": "Container Feet Size"
   },
   {
-   "fieldname": "ton_based",
+   "fieldname": "square_feet_size",
+   "fieldtype": "Data",
+   "label": "Square Feet Size"
+  },
+  {
+   "fieldname": "add_on_type",
+   "fieldtype": "Data",
+   "label": "Add On Type"
+  },
+  {
+   "fieldname": "add_on_service",
+   "fieldtype": "Data",
+   "label": "Add On Service"
+  },
+  {
+   "fieldname": "ton_size",
    "fieldtype": "Int",
-   "label": "Sqft Based Type"
+   "label": "TON Size"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-03 22:34:09.799724",
+ "modified": "2025-07-10 19:26:47.959741",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Customer Traffic Config",

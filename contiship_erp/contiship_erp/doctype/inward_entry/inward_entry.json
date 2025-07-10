@@ -9,7 +9,7 @@
   "container",
   "column_break_ltov",
   "arrival_date",
-  "storage_start_date",
+  "cha_name",
   "section_break_pcxa",
   "inward_entry_items",
   "section_break_itnv",
@@ -38,11 +38,6 @@
    "label": "Arrival Date"
   },
   {
-   "fieldname": "storage_start_date",
-   "fieldtype": "Date",
-   "label": "Storage Start Date"
-  },
-  {
    "fieldname": "section_break_pcxa",
    "fieldtype": "Section Break",
    "label": "Items"
@@ -62,12 +57,17 @@
    "fieldtype": "Table",
    "label": "Add on Services Inward",
    "options": "Add On Services"
+  },
+  {
+   "fieldname": "cha_name",
+   "fieldtype": "Data",
+   "label": "CHA Name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-10 22:04:50.529266",
+ "modified": "2025-07-10 16:16:18.972833",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
