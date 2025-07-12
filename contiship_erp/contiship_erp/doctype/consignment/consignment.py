@@ -8,3 +8,8 @@ from frappe.model.document import Document
 class Consignment(Document):
 	pass
 
+
+
+@frappe.whitelist()
+def get_traffic_config(customer):
+    return frappe.get_doc("Customer", customer)

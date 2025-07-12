@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:INW-{MM}-{#####}",
  "creation": "2025-06-06 00:04:38.036024",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -67,10 +68,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-10 16:16:18.972833",
+ "modified": "2025-07-11 16:37:43.064583",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

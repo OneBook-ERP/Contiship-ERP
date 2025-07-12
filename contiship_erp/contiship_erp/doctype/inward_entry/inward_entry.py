@@ -46,3 +46,8 @@ def get_container_details(container_id):
         'item_name': item_details.get('item_name', container.containers),
         'consignment': container.parent
     }
+
+@frappe.whitelist()
+def get_arrival_date(name):
+    arrival_date = frappe.db.get_value("Container Entry", name, "container_arrival_date")
+    return arrival_date

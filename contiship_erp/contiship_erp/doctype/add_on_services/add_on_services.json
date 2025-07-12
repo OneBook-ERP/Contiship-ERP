@@ -8,7 +8,7 @@
  "field_order": [
   "add_on_item",
   "type",
-  "metric_ton",
+  "service",
   "rate"
  ],
  "fields": [
@@ -17,14 +17,16 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Add On Item",
+   "link_filters": "[[\"Item\",\"custom_rent_type\",\"=\",\"Add On\"]]",
    "options": "Item"
   },
   {
+   "fetch_from": "add_on_item.custom_add_on_type",
    "fieldname": "type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type",
-   "options": "\n20 ft\n40 ft\nTon"
+   "options": "\nLoading\nUnloading\nCrossing\nHandling Charges"
   },
   {
    "fieldname": "rate",
@@ -33,17 +35,18 @@
    "label": "Rate"
   },
   {
-   "fieldname": "metric_ton",
-   "fieldtype": "Int",
+   "fetch_from": "add_on_item.custom_add_on_service",
+   "fieldname": "service",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Metric Ton"
+   "label": "Service"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-10 22:05:55.474898",
+ "modified": "2025-07-11 23:36:34.313781",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Add On Services",

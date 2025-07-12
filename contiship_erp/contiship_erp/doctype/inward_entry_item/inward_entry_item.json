@@ -19,6 +19,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Item",
+   "link_filters": "[[\"Item\",\"custom_container_items\",\"=\",1]]",
    "options": "Item"
   },
   {
@@ -57,7 +58,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-27 23:53:14.192879",
+ "modified": "2025-07-11 16:28:57.900227",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry Item",
