@@ -51,3 +51,37 @@ def get_container_details(container_id):
 def get_arrival_date(name):
     arrival_date = frappe.db.get_value("Container Entry", name, "container_arrival_date")
     return arrival_date
+
+
+@frappe.whitelist()
+def get_items_rate(item):
+    from frappe.utils import getdate, nowdate    
+    today = getdate(nowdate())
+
+    price_data = frappe.db.get_value(
+        "Item Price",
+        {
+            "item_code": item,
+            "price_list": "Standard Selling",
+            "selling": 1
+        },
+        ["price_list_rate", "valid_from", "valid_upto"],
+        as_dict=True
+    )
+    if not price_data:
+        return {
+            "price": 0
+        }
+
+    valid_from = getdate(price_data.valid_from) if price_data.valid_from else None
+    valid_upto = getdate(price_data.valid_upto) if price_data.valid_upto else None
+
+    if (valid_from and today < valid_from) or (valid_upto and today > valid_upto):
+        return {
+            "price": 0
+        }
+
+    return {
+        "price": price_data.price_list_rate or 0
+    }
+

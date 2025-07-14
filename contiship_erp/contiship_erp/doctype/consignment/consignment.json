@@ -7,14 +7,16 @@
  "engine": "InnoDB",
  "field_order": [
   "customer",
+  "invoice_generated",
   "column_break_puvn",
   "date",
   "final_invoice_link",
-  "invoice_generated",
   "section_break_rvfb",
   "container_entry",
   "traffic_config_tab",
-  "customer_traffic_config"
+  "section_break_hcwu",
+  "customer_traffic_config",
+  "amended_from"
  ],
  "fields": [
   {
@@ -24,6 +26,7 @@
    "options": "Customer"
   },
   {
+   "allow_on_submit": 1,
    "default": "0",
    "fieldname": "invoice_generated",
    "fieldtype": "Check",
@@ -32,6 +35,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "final_invoice_link",
    "fieldtype": "Link",
    "label": "Final Invoice Link",
@@ -69,10 +73,25 @@
    "fieldtype": "Table",
    "label": "Customer Traffic Config",
    "options": "Customer Traffic Config"
+  },
+  {
+   "fieldname": "section_break_hcwu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Consignment",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [
   {
    "link_doctype": "Inward Entry",
@@ -87,7 +106,7 @@
    "link_fieldname": "consignment"
   }
  ],
- "modified": "2025-07-12 11:08:44.470670",
+ "modified": "2025-07-14 18:03:03.279134",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Consignment",

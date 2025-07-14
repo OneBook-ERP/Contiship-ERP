@@ -10,9 +10,10 @@
   "rent_type",
   "column_break_vhnc",
   "minimum_commitmentnoofdays",
-  "after_75_discounted_rate",
+  "enable_75_rule",
   "column_break_sfuh",
   "rate",
+  "after_75_discounted_rate",
   "section_break_jilm",
   "container_feet",
   "square_feet_size",
@@ -54,9 +55,11 @@
    "width": "0"
   },
   {
+   "depends_on": "eval:doc.enable_75_rule",
    "fieldname": "after_75_discounted_rate",
    "fieldtype": "Currency",
-   "label": "After 75% (Discounted Rate)"
+   "label": "After 75% (Discounted Rate)",
+   "mandatory_depends_on": "eval:doc.enable_75_rule"
   },
   {
    "fieldname": "section_break_jilm",
@@ -102,13 +105,19 @@
    "in_list_view": 1,
    "label": "Rent Type",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_75_rule",
+   "fieldtype": "Check",
+   "label": "Enable 75% Rule"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-12 13:37:55.708175",
+ "modified": "2025-07-14 17:40:28.049362",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Customer Traffic Config",

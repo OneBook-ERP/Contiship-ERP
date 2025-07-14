@@ -14,14 +14,14 @@ frappe.ui.form.on("Item", {
 function set_initial_visibility(frm) {
     // Container based rent
     if (frm.doc.custom_container_based_rent) {
-        hide_fields(frm, ['custom_sqft_based_rent', 'custom_add_on_item', 
-                         'custom_consignment_container_items', 'custom_container_items']);
+        hide_fields(frm, ['custom_sqft_based_rent', 'custom_add_on_item' 
+                         , 'custom_container_items']);
     }
     
     // Sqft based rent
     if (frm.doc.custom_sqft_based_rent) {
-        hide_fields(frm, ['custom_container_based_rent', 'custom_add_on_item', 
-                         'custom_consignment_container_items', 'custom_container_items']);
+        hide_fields(frm, ['custom_container_based_rent', 'custom_add_on_item'
+                         , 'custom_container_items']);
         frm.set_df_property("custom_sqft_type", "hidden", 0);
     } else {
         frm.set_df_property("custom_sqft_type", "hidden", 1);
@@ -45,20 +45,20 @@ function set_initial_visibility(frm) {
     
     // Add on item
     if (frm.doc.custom_add_on_item) {
-        hide_fields(frm, ['custom_container_based_rent', 'custom_sqft_based_rent', 
-                         'custom_consignment_container_items', 'custom_container_items']);
+        hide_fields(frm, ['custom_container_based_rent', 'custom_sqft_based_rent' 
+                         , 'custom_container_items']);
     }
     
     // Consignment container items
-    if (frm.doc.custom_consignment_container_items) {
-        hide_fields(frm, ['custom_container_based_rent', 'custom_sqft_based_rent', 
-                         'custom_add_on_item', 'custom_container_items']);
-    }
+    // if (frm.doc.) {
+    //     hide_fields(frm, ['custom_container_based_rent', 'custom_sqft_based_rent', 
+    //                      'custom_add_on_item', 'custom_container_items']);
+    // }
     
     // Container items
     if (frm.doc.custom_container_items) {
         hide_fields(frm, ['custom_container_based_rent', 'custom_sqft_based_rent', 
-                         'custom_add_on_item', 'custom_consignment_container_items']);
+                         'custom_add_on_item']);
     }
 }
 
@@ -73,12 +73,12 @@ function hide_fields(frm, fields) {
 frappe.ui.form.on("Item", {
     custom_container_based_rent: function(frm) {
         if (frm.doc.custom_container_based_rent) {
-            hide_fields(frm, ['custom_sqft_based_rent', 'custom_add_on_item', 
-                            'custom_consignment_container_items', 'custom_container_items']);
+            hide_fields(frm, ['custom_sqft_based_rent', 'custom_add_on_item'
+                            , 'custom_container_items']);
         } else {
             frm.set_df_property('custom_sqft_based_rent', 'hidden', 0);
             frm.set_df_property('custom_add_on_item', 'hidden', 0);
-            frm.set_df_property('custom_consignment_container_items', 'hidden', 0);
+            // frm.set_df_property('', 'hidden', 0);
             frm.set_df_property('custom_container_items', 'hidden', 0);
         }
     },
@@ -86,12 +86,12 @@ frappe.ui.form.on("Item", {
     custom_sqft_based_rent: function(frm) {
         if (frm.doc.custom_sqft_based_rent) {
             hide_fields(frm, ['custom_container_based_rent', 'custom_add_on_item', 
-                            'custom_consignment_container_items', 'custom_container_items']);
+                             'custom_container_items']);
             frm.set_df_property("custom_sqft_type", "hidden", 0);
         } else {
             frm.set_df_property('custom_container_based_rent', 'hidden', 0);
             frm.set_df_property('custom_add_on_item', 'hidden', 0);
-            frm.set_df_property('custom_consignment_container_items', 'hidden', 0);
+            // frm.set_df_property('', 'hidden', 0);
             frm.set_df_property('custom_container_items', 'hidden', 0);
             frm.set_df_property("custom_sqft_type", "hidden", 1);
         }
@@ -116,38 +116,38 @@ frappe.ui.form.on("Item", {
     custom_add_on_item: function(frm) {
         if (frm.doc.custom_add_on_item) {
             hide_fields(frm, ['custom_container_based_rent', 'custom_sqft_based_rent', 
-                            'custom_consignment_container_items', 'custom_container_items']);
+                            'custom_container_items']);
         } else {
             frm.set_df_property('custom_container_based_rent', 'hidden', 0);
             frm.set_df_property('custom_sqft_based_rent', 'hidden', 0);
-            frm.set_df_property('custom_consignment_container_items', 'hidden', 0);
+            // frm.set_df_property('', 'hidden', 0);
             frm.set_df_property('custom_container_items', 'hidden', 0);
         }
     },
 
-    custom_consignment_container_items: function(frm) {
-        if (frm.doc.custom_consignment_container_items) {
-            hide_fields(frm, ['custom_rent_type', 'custom_container_feat_size', 
-                            'custom_container_min_commitment', 'custom_add_on_type','custom_add_on_service',
-                        'custom_square_feet_size','custom_ton_size','custom_sqft_min_commitment','custom_container_items']);
-        } else {
-            frm.set_df_property('custom_rent_type', 'hidden', 0);
-            frm.set_df_property('custom_container_feat_size', 'hidden', 0);
-            frm.set_df_property('custom_container_min_commitment', 'hidden', 0);
-            frm.set_df_property('custom_add_on_type', 'hidden', 0);
-            frm.set_df_property('custom_add_on_service', 'hidden', 0);
-            frm.set_df_property('custom_square_feet_size', 'hidden', 0);
-            frm.set_df_property('custom_ton_size', 'hidden', 0);
-            frm.set_df_property('custom_sqft_min_commitment', 'hidden', 0);
-            frm.set_df_property('custom_container_items', 'hidden', 0);
-        }
-    },
+    // : function(frm) {
+    //     if (frm.doc.) {
+    //         hide_fields(frm, ['custom_rent_type', 'custom_container_feat_size', 
+    //                         'custom_container_min_commitment', 'custom_add_on_type','custom_add_on_service',
+    //                     'custom_square_feet_size','custom_ton_size','custom_sqft_min_commitment','custom_container_items']);
+    //     } else {
+    //         frm.set_df_property('custom_rent_type', 'hidden', 0);
+    //         frm.set_df_property('custom_container_feat_size', 'hidden', 0);
+    //         frm.set_df_property('custom_container_min_commitment', 'hidden', 0);
+    //         frm.set_df_property('custom_add_on_type', 'hidden', 0);
+    //         frm.set_df_property('custom_add_on_service', 'hidden', 0);
+    //         frm.set_df_property('custom_square_feet_size', 'hidden', 0);
+    //         frm.set_df_property('custom_ton_size', 'hidden', 0);
+    //         frm.set_df_property('custom_sqft_min_commitment', 'hidden', 0);
+    //         frm.set_df_property('custom_container_items', 'hidden', 0);
+    //     }
+    // },
 
     custom_container_items: function(frm) {
         if (frm.doc.custom_container_items) {
             hide_fields(frm, ['custom_rent_type', 'custom_container_feat_size', 
                 'custom_container_min_commitment', 'custom_add_on_type','custom_add_on_service',
-            'custom_square_feet_size','custom_ton_size','custom_sqft_min_commitment','custom_consignment_container_items']);
+            'custom_square_feet_size','custom_ton_size','custom_sqft_min_commitment']);
         } else {
             frm.set_df_property('custom_rent_type', 'hidden', 0);
             frm.set_df_property('custom_container_feat_size', 'hidden', 0);
@@ -157,7 +157,7 @@ frappe.ui.form.on("Item", {
             frm.set_df_property('custom_square_feet_size', 'hidden', 0);
             frm.set_df_property('custom_ton_size', 'hidden', 0);
             frm.set_df_property('custom_sqft_min_commitment', 'hidden', 0);
-            frm.set_df_property('custom_consignment_container_items', 'hidden', 0);
+            // frm.set_df_property('', 'hidden', 0);
         }
     }
 });

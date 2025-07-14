@@ -23,25 +23,51 @@ frappe.ui.form.on('Inward Entry', {
     }
 });
 
-// frappe.ui.form.on('Add On Services', {
-//     add_on_item(frm,cdt,cdn){
-//         frappe.call({
-//             method: 'contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.get_items',
-//             args: {
-//                 'consignment': frm.doc.consignment
-//             },
-//             callback: function(r) {
-//                 if (r.message) {                    
-//                     let display = `${frm.doc.consignment || ''} - ${r.message.item_name || r.message.item_code || ''}`;
-//                     frm.set_df_property('container', 'description', display);
-//                 }
-//             }
-//         })
-//     }
-// });
+frappe.ui.form.on('Inward Entry Item', {
+    qty: function(frm) {
+        update_addon_qty_total(frm);
+    },
+    inward_entry_items_add: function(frm) {
+        update_addon_qty_total(frm);
+    },
+    inward_entry_items_remove: function(frm) {
+        update_addon_qty_total(frm);
+    }
+});
+
+function update_addon_qty_total(frm) {
+    const total_qty = frm.doc.inward_entry_items?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0;
+
+    frm.doc.add_on_services_inward?.forEach(row => {
+        frappe.model.set_value(row.doctype, row.name, 'qty', total_qty);
+    });
+}
+
+frappe.ui.form.on('Add On Services', {
+    add_on_item(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+
+        if (!row.add_on_item) return;
+
+        frappe.call({
+            method: 'contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.get_items_rate',
+            args: {
+                item: row.add_on_item
+            },
+            callback: function(r) {
+                if (r.message) {
+                    frappe.model.set_value(cdt, cdn, 'rate', r.message.price || 0);
+                    update_addon_qty_total(frm)                    
+                }
+            }
+        });
+    }
+});
+
 
 
 frappe.ui.form.on('Inward Entry', 'container', function(frm, cdt, cdn) {
+    
     if (frm.doc.container) {        
         frappe.call({
             method: 'contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.get_container_details',
@@ -57,7 +83,7 @@ frappe.ui.form.on('Inward Entry', 'container', function(frm, cdt, cdn) {
         });
     } else {
         frm.set_df_property('container', 'description', '');
-    }
+    }   
 });
 
 function get_arrival_date(frm){

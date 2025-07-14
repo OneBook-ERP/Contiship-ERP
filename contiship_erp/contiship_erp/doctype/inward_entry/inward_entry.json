@@ -14,7 +14,8 @@
   "section_break_pcxa",
   "inward_entry_items",
   "section_break_itnv",
-  "add_on_services_inward"
+  "add_on_services_inward",
+  "amended_from"
  ],
  "fields": [
   {
@@ -63,12 +64,23 @@
    "fieldname": "cha_name",
    "fieldtype": "Data",
    "label": "CHA Name"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Inward Entry",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2025-07-11 16:37:43.064583",
+ "modified": "2025-07-14 17:24:05.676770",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
