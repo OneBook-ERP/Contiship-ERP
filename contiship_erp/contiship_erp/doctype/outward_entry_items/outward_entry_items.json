@@ -6,9 +6,11 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "consignment",
+  "container",
   "item",
-  "qty",
   "column_break_nqgr",
+  "qty",
   "uom",
   "batch"
  ],
@@ -18,7 +20,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Item",
-   "options": "Item"
+   "options": "Item",
+   "reqd": 1
   },
   {
    "fieldname": "qty",
@@ -43,13 +46,30 @@
    "in_list_view": 1,
    "label": "Batch",
    "options": "Batch"
+  },
+  {
+   "fieldname": "consignment",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Consignment",
+   "link_filters": "[[\"Consignment\",\"invoice_generated\",\"=\",0]]",
+   "options": "Consignment",
+   "reqd": 1
+  },
+  {
+   "fieldname": "container",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Container",
+   "options": "Container Entry",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-10 22:26:42.895327",
+ "modified": "2025-07-14 20:34:29.437657",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Outward Entry Items",

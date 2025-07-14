@@ -6,10 +6,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "consignment",
-  "container",
-  "column_break_objw",
   "date",
+  "column_break_objw",
   "vehicle_no",
   "section_break_ayvx",
   "items",
@@ -18,23 +16,6 @@
   "amended_from"
  ],
  "fields": [
-  {
-   "fieldname": "consignment",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Consignment",
-   "link_filters": "[[\"Consignment\",\"invoice_generated\",\"=\",0]]",
-   "options": "Consignment",
-   "reqd": 1
-  },
-  {
-   "fieldname": "container",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Container",
-   "options": "Container Entry",
-   "reqd": 1
-  },
   {
    "fieldname": "date",
    "fieldtype": "Date",
@@ -86,7 +67,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-14 10:55:53.231712",
+ "modified": "2025-07-14 22:00:32.697287",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Outward Entry",
