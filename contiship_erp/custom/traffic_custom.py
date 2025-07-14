@@ -1,20 +1,34 @@
 import frappe
+from frappe.utils import nowdate
 
 @frappe.whitelist()
 def fetch_item_data(service_type):
     try:
         item = frappe.get_doc("Item", service_type)
         result = {
+            "rent_type": None,
             "container_feet": None,
             "min_commitment": None,
             "square_feet_size":None,
-            "ton_size":None,
-            # "sqft_type": None,
+            "ton_size":None,            
             "sqft_value": None,            
             "add_on_type":None,
-            "custom_add_on_service":None
+            "add_on_service":None,
+            "rate": None
         }
+        item_price = frappe.db.sql("""
+                SELECT price_list_rate
+                FROM `tabItem Price`
+                WHERE item_code = %s AND selling = 1
+                AND (%s BETWEEN IFNULL(valid_from, %s) AND IFNULL(valid_upto, %s))
+                ORDER BY valid_from DESC
+                LIMIT 1
+            """, (service_type, nowdate(), nowdate(), nowdate()), as_dict=1)
+
+        result["rate"] = item_price[0].price_list_rate if item_price else None
+
         if item.custom_rent_type == "Container Based":
+            result["rent_type"] = "Container Based"
             if item.custom_container_feat_size == "20":
                 result["container_feet"] = "20"
                 result["min_commitment"] = item.custom_container_min_commitment
@@ -22,6 +36,7 @@ def fetch_item_data(service_type):
                 result["container_feet"] = "40"
                 result["min_commitment"] = item.custom_container_min_commitment
         elif item.custom_rent_type == "Sqft Based":
+            result["rent_type"] = "Sqft Based"
             if item.custom_square_feet_size == "1000":
                 result["square_feet_size"] = "1000"
                 result["min_commitment"] = item.custom_sqft_min_commitment
@@ -33,15 +48,16 @@ def fetch_item_data(service_type):
                 result["min_commitment"] = item.custom_sqft_min_commitment
                 result["ton_size"]= item.custom_ton_size
         elif item.custom_rent_type == "Add On":
+            result["rent_type"] = "Add On"
             if item.custom_add_on_type == "Loading":
                 result["add_on_type"] = "Loading"
-                result["custom_add_on_service"] = item.custom_add_on_service
+                result["add_on_service"] = item.custom_add_on_service
             elif item.custom_add_on_type == "Unloading":
                 result["add_on_type"] = "Unloading"
-                result["custom_add_on_service"] = item.custom_add_on_service
+                result["add_on_service"] = item.custom_add_on_service
             elif item.custom_add_on_type == "Crossing":
                 result["add_on_type"] = "Crossing"
-                result["custom_add_on_service"] = item.custom_add_on_service
+                result["add_on_service"] = item.custom_add_on_service
             
         # elif item.custom_container_based_rent == 1:
         #     result["container_feet"] = item.custom_container_feat_size

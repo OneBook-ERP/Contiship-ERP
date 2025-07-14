@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "containers",
+  "container_size",
   "container_arrival_date",
   "column_break_cmrn",
   "boeinvoice_no",
@@ -27,7 +28,8 @@
    "fieldname": "container_arrival_date",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Container Arrival Date"
+   "label": "Container Arrival Date",
+   "reqd": 1
   },
   {
    "fieldname": "boeinvoice_no",
@@ -37,17 +39,26 @@
   },
   {
    "fieldname": "containers",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Containers",
-   "options": "Item"
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "container_size",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Container Size",
+   "options": "\n20\n40",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-29 18:05:20.177871",
+ "modified": "2025-07-14 17:25:25.863402",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Container Entry",

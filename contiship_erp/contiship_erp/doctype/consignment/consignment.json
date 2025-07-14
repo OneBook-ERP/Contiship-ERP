@@ -7,12 +7,16 @@
  "engine": "InnoDB",
  "field_order": [
   "customer",
+  "invoice_generated",
   "column_break_puvn",
   "date",
   "final_invoice_link",
-  "invoice_generated",
   "section_break_rvfb",
-  "container_entry"
+  "container_entry",
+  "traffic_config_tab",
+  "section_break_hcwu",
+  "customer_traffic_config",
+  "amended_from"
  ],
  "fields": [
   {
@@ -22,6 +26,7 @@
    "options": "Customer"
   },
   {
+   "allow_on_submit": 1,
    "default": "0",
    "fieldname": "invoice_generated",
    "fieldtype": "Check",
@@ -30,6 +35,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "final_invoice_link",
    "fieldtype": "Link",
    "label": "Final Invoice Link",
@@ -56,28 +62,51 @@
    "fieldtype": "Date",
    "label": "Date",
    "read_only": 1
+  },
+  {
+   "fieldname": "traffic_config_tab",
+   "fieldtype": "Tab Break",
+   "label": "Traffic Config"
+  },
+  {
+   "fieldname": "customer_traffic_config",
+   "fieldtype": "Table",
+   "label": "Customer Traffic Config",
+   "options": "Customer Traffic Config"
+  },
+  {
+   "fieldname": "section_break_hcwu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Consignment",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [
   {
-   "group": "Linked Doctypes",
    "link_doctype": "Inward Entry",
    "link_fieldname": "consignment"
   },
   {
-   "group": "Linked Doctypes",
    "link_doctype": "Outward Entry",
    "link_fieldname": "consignment"
   },
   {
-   "group": "Linked Doctypes",
    "link_doctype": "Repacking Entry",
    "link_fieldname": "consignment"
   }
  ],
- "modified": "2025-06-11 07:06:06.738462",
+ "modified": "2025-07-14 18:03:03.279134",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Consignment",

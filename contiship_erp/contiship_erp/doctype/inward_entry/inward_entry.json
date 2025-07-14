@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:INW-{MM}-{#####}",
  "creation": "2025-06-06 00:04:38.036024",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -13,7 +14,8 @@
   "section_break_pcxa",
   "inward_entry_items",
   "section_break_itnv",
-  "add_on_services_inward"
+  "add_on_services_inward",
+  "amended_from"
  ],
  "fields": [
   {
@@ -62,15 +64,27 @@
    "fieldname": "cha_name",
    "fieldtype": "Data",
    "label": "CHA Name"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Inward Entry",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2025-07-10 16:16:18.972833",
+ "modified": "2025-07-14 17:24:05.676770",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
