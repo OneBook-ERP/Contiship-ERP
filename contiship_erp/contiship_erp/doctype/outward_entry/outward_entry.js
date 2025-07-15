@@ -12,8 +12,29 @@ frappe.ui.form.on("Outward Entry", {
             };
         });
     },
-    container(frm){      
-        get_arrival_date(frm)
+    // container(frm){      
+    //     get_arrival_date(frm)
+    // },
+    onload(frm) {
+        frm.fields_dict['items'].grid.get_field('container').get_query = function(doc, cdt, cdn) {
+            const row = locals[cdt][cdn];
+            return {
+                query: 'contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.get_containers',
+                filters: {
+                    consignment: row.consignment
+                }
+            };
+        };
+        frm.fields_dict['items'].grid.get_field('item').get_query = function(doc, cdt, cdn) {
+            const row = locals[cdt][cdn];
+            return {
+                query: 'contiship_erp.contiship_erp.doctype.outward_entry.outward_entry.get_inward_filter',
+                filters: {
+                    consignment: row.consignment,
+                    name: row.container
+                }
+            };
+        };
     }
 });
 
@@ -68,16 +89,43 @@ frappe.ui.form.on('Add On Services', {
 });
 
 frappe.ui.form.on('Outward Entry Items', {
-    qty: function(frm) {
+    consignment(frm, cdt, cdn) {        
+        frappe.model.set_value(cdt, cdn, 'container', null);
+    },
+    item(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        if (!row.consignment || !row.container || !row.item) return;
+
+        frappe.call({
+            method: 'contiship_erp.contiship_erp.doctype.outward_entry.outward_entry.get_inward_item_details',
+            args: {
+                consignment: row.consignment,
+                container: row.container,
+                item_code: row.item
+            },
+            callback: function(r) {
+                if (r.message) {
+                    frappe.model.set_value(cdt, cdn, 'qty', r.message.qty);
+                    frappe.model.set_value(cdt, cdn, 'uom', r.message.uom);
+                    frappe.model.set_value(cdt, cdn, 'batch', r.message.batch);
+                }
+            }
+        });
+    },
+    qty(frm) {
         update_addon_qty_total(frm);
     },
-    inward_entry_items_add: function(frm) {
+
+    outward_entry_items_add(frm) {
         update_addon_qty_total(frm);
     },
-    inward_entry_items_remove: function(frm) {
+
+    outward_entry_items_remove(frm) {
         update_addon_qty_total(frm);
     }
 });
+
+
 
 function update_addon_qty_total(frm) {
     const total_qty = frm.doc.items?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0;
