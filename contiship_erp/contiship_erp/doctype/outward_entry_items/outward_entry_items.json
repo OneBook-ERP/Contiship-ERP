@@ -6,11 +6,15 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "container",
   "item",
   "qty",
-  "column_break_nqgr",
   "uom",
-  "batch"
+  "vehicle_no",
+  "column_break_nqgr",
+  "cha_name",
+  "grade_item",
+  "grade"
  ],
  "fields": [
   {
@@ -18,7 +22,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Item",
-   "options": "Item"
+   "options": "Item",
+   "reqd": 1
   },
   {
    "fieldname": "qty",
@@ -38,18 +43,44 @@
    "options": "UOM"
   },
   {
-   "fieldname": "batch",
+   "fieldname": "container",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Batch",
-   "options": "Batch"
+   "label": "Container",
+   "options": "Inward Entry Item",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "consignment.cha_name",
+   "fieldname": "cha_name",
+   "fieldtype": "Data",
+   "label": "CHA Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "grade_item",
+   "fieldtype": "Check",
+   "label": "Grade Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "grade",
+   "fieldtype": "Data",
+   "label": "Grade",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Vehicle No"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-10 22:26:42.895327",
+ "modified": "2025-07-16 11:10:56.267690",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Outward Entry Items",
