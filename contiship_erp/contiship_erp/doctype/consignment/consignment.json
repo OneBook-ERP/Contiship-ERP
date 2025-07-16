@@ -7,9 +7,11 @@
  "engine": "InnoDB",
  "field_order": [
   "customer",
+  "cha_name",
   "invoice_generated",
   "column_break_puvn",
   "date",
+  "boeinvoice_no",
   "final_invoice_link",
   "section_break_rvfb",
   "container_entry",
@@ -87,6 +89,18 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "cha_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "CHA Name"
+  },
+  {
+   "fieldname": "boeinvoice_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "BOE/Invoice No"
   }
  ],
  "grid_page_length": 50,
@@ -106,7 +120,7 @@
    "link_fieldname": "consignment"
   }
  ],
- "modified": "2025-07-14 22:00:16.584011",
+ "modified": "2025-07-15 09:32:07.674650",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Consignment",

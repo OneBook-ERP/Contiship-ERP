@@ -20,6 +20,38 @@ frappe.ui.form.on('Inward Entry', {
     },
     container(frm){      
         get_arrival_date(frm)
+    },
+    customer(frm){
+        if(frm.doc.customer){
+        frappe.call({
+            method: 'contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.get_traffic_config',
+            args: {
+                'customer': frm.doc.customer
+            },
+            callback: function(r) {
+                if (r.message) {                                    
+                   frm.set_value("customer_tariff_config", r.message.custom_customer_traffic_config);
+                   frm.refresh_field("customer_tariff_config");
+                }
+            }
+        })
+        }
+    },
+    onload(frm) {
+        frm.fields_dict['add_on_services_inward'].grid.get_field('add_on_item').get_query = function(doc, cdt, cdn) {            
+            let add_on_items = [];
+
+            (frm.doc.customer_tariff_config || []).forEach(config => {               
+                if (config.rent_type === "Add On") {
+                    add_on_items.push(config.service_type);
+                }
+            });
+            return {
+                filters: [
+                    ['name', 'in', add_on_items]
+                ]
+            };
+        };
     }
 });
 

@@ -148,6 +148,14 @@ doctype_js = {
 # 	}
 # }
 
+
+
+scheduler_events = {
+    "daily": [
+        "contiship_erp.custom.traffic_custom.create_monthly_sales_invoice"
+    ]
+}
+
 # Scheduled Tasks
 # ---------------
 

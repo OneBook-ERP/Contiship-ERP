@@ -117,3 +117,179 @@ def get_valid_service_items(doctype, txt, searchfield, start, page_len, filters)
         )
         ORDER BY idx DESC
     """, as_list=True)
+
+
+
+
+import frappe
+from frappe.utils import getdate, nowdate
+from datetime import datetime, timedelta
+
+def run_day_before_last_day():
+    today = datetime.today().date()
+    tomorrow = today + timedelta(days=1)
+    day_after_tomorrow = today + timedelta(days=2)
+    if day_after_tomorrow.month != tomorrow.month:
+        return True
+    return False
+
+@frappe.whitelist(allow_guest=True)
+def create_monthly_sales_invoice():
+    if not run_day_before_last_day():
+        return
+
+    today = getdate(nowdate())
+
+    consignments = frappe.get_all("Inward Entry", filters={
+        "docstatus": 1,
+        "invoice_generated": 0
+    }, fields=["name"])
+
+    for consignment in consignments:
+        try:
+            generate_invoice_for_consignment(consignment.name, today)
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"Monthly Invoice Failed for {consignment.name}")
+
+
+def generate_invoice_for_consignment(consignment_id, billing_date):
+    from collections import defaultdict
+
+    consignment = frappe.get_doc("Inward Entry", consignment_id)
+    traffic_config = consignment.customer_tariff_config or []
+    if not traffic_config and consignment.customer:
+        customer = frappe.get_doc("Customer", consignment.customer)
+        traffic_config = customer.customer_traffic_config
+    if not traffic_config:
+        return
+
+    containers = frappe.get_all("Inward Entry Item", filters={"parent": consignment_id}, fields=["name", "container_arrival_date", "container_size"])
+
+    item_map = {}
+    sqft_by_date = defaultdict(list)
+
+    for container in containers:
+        container_doc = frappe.get_doc("Inward Entry Item", container.name)
+        total_inward = frappe.db.get_value("Inward Entry Item", container.name, "qty") or 0
+        used_outward = frappe.db.sql("""
+            SELECT SUM(oi.qty) FROM `tabOutward Entry Items` oi
+            JOIN `tabOutward Entry` o ON o.name = oi.parent
+            WHERE o.consignment = %s AND oi.container = %s
+        """, (consignment_id, container.name))[0][0] or 0
+
+        arrival_date = getdate(container.container_arrival_date)
+        days_stayed = (billing_date - arrival_date).days or 1
+
+        apply_discount = used_outward >= total_inward * 0.25
+        raw_sqft = int(container.container_size or 0) * 10
+
+        for traffic in traffic_config:
+            service_item = frappe.get_doc("Item", traffic.service_type)
+
+            if not hasattr(service_item, 'custom_rent_type'):
+                continue
+
+            duration = max(days_stayed, traffic.minimum_commitmentnoofdays or 1)
+            rate = traffic.after_75_discounted_rate if (traffic.enable_75_rule and apply_discount) else traffic.rate
+
+            if service_item.custom_rent_type == "Container Based":
+                if str(container.container_size) == str(service_item.custom_container_feat_size):
+                    key = f"{traffic.service_type}|{arrival_date}|{billing_date}|container"
+                    item_map[key] = {
+                        "item_code": traffic.service_type,
+                        "qty": 1,
+                        "uom": "Day",
+                        "rate": rate * duration,
+                        "description": (
+                            f"From {arrival_date.strftime('%d.%m.%y')} to {billing_date.strftime('%d.%m.%y')}<br>"
+                            f"{duration} Days * {rate} = {rate * duration}<br>"
+                            f"(1*{container.container_size})"
+                        )
+                    }
+            elif service_item.custom_rent_type == "Sqft Based":
+                sqft_by_date[billing_date].append({
+                    "sqft": raw_sqft,
+                    "arrival_date": arrival_date,
+                    "days_stayed": days_stayed,
+                    "container_id": container.name
+                })
+
+    for billing_date, containers in sqft_by_date.items():
+        total_sqft = sum(c["sqft"] for c in containers)
+        arrival_date = containers[0]["arrival_date"]
+        min_days = min(c["days_stayed"] for c in containers)
+
+        sqft_configs = sorted(
+            [tc for tc in traffic_config if frappe.get_value("Item", tc.service_type, "custom_rent_type") == "Sqft Based"],
+            key=lambda x: int(x.square_feet_size or 0), reverse=True
+        )
+
+        remaining_sqft = total_sqft
+
+        for config in sqft_configs:
+            block_size = int(config.square_feet_size or 0)
+            if block_size <= 0: continue
+
+            block_count = remaining_sqft // block_size
+            if block_count == 0: continue
+
+            remaining_sqft -= block_count * block_size
+            duration = max(min_days, config.minimum_commitmentnoofdays or 1)
+            rate = config.after_75_discounted_rate if (config.enable_75_rule and apply_discount) else config.rate
+
+            key = f"{config.service_type}|{arrival_date}|{billing_date}|{block_size}"
+            item_map[key] = {
+                "item_code": config.service_type,
+                "qty": block_count,
+                "uom": "Day",
+                "rate": rate * duration * block_count,
+                "description": (
+                    f"From {arrival_date.strftime('%d.%m.%y')} to {billing_date.strftime('%d.%m.%y')}<br>"
+                    f"{duration} Days * {rate} = {rate * duration}<br>"
+                    f"({block_count}*{round(block_size/10)})"
+                )
+            }
+
+        if remaining_sqft > 0:
+            sqft_500_item = frappe.get_all("Item", filters={"custom_rent_type": "Sqft Based", "custom_square_feet_size": 500}, fields=["name"], limit=1)
+            if sqft_500_item:
+                sqft_500_item_code = sqft_500_item[0].name
+                duration = max(min_days, 1)
+                price_data = frappe.db.get_value(
+                    "Item Price",
+                    {"item_code": sqft_500_item_code, "price_list": "Standard Selling", "selling": 1},
+                    ["price_list_rate", "valid_from", "valid_upto"], as_dict=True
+                )
+                rate_500 = price_data.price_list_rate if price_data else 1
+
+                key = f"{sqft_500_item_code}|{arrival_date}|{billing_date}|500"
+                item_map[key] = {
+                    "item_code": sqft_500_item_code,
+                    "qty": 1,
+                    "uom": "Day",
+                    "rate": rate_500 * duration,
+                    "description": (
+                        f"From {arrival_date.strftime('%d.%m.%y')} to {billing_date.strftime('%d.%m.%y')}<br>"
+                        f"{duration} Days * {rate_500} = {rate_500 * duration}<br>"
+                        f"(1*{round(remaining_sqft/10)})"
+                    )
+                }
+
+    invoice_items = [i for i in item_map.values() if i["qty"] > 0]
+    if not invoice_items:
+        return
+
+    invoice = frappe.get_doc({
+        "doctype": "Sales Invoice",
+        "customer": consignment.customer,
+        "posting_date": billing_date,
+        "custom_reference_doctype": "Inward Entry",
+        "custom_reference_docname": consignment.name,
+        "custom_invoice_type": "Monthly Billing",
+        "items": invoice_items
+    })
+    invoice.insert()
+
+    consignment.monthly_invoice_generated = 1
+    consignment.sales_invoice = invoice.name
+    consignment.save()

@@ -6,9 +6,11 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "date",
+  "customer",
+  "column_break_lxyx",
+  "consignment",
   "column_break_objw",
-  "vehicle_no",
+  "date",
   "section_break_ayvx",
   "items",
   "section_break_ttjw",
@@ -22,11 +24,6 @@
    "in_list_view": 1,
    "label": "Date",
    "reqd": 1
-  },
-  {
-   "fieldname": "vehicle_no",
-   "fieldtype": "Data",
-   "label": "Vehicle No"
   },
   {
    "fieldname": "column_break_objw",
@@ -49,6 +46,7 @@
   {
    "fieldname": "add_on_services_outward",
    "fieldtype": "Table",
+   "hidden": 1,
    "label": "Add on Services Outward",
    "options": "Add On Services"
   },
@@ -61,13 +59,31 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "consignment",
+   "fieldtype": "Link",
+   "label": "Consignment",
+   "options": "Inward Entry",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_lxyx",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-14 22:00:32.697287",
+ "modified": "2025-07-16 16:21:49.655306",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Outward Entry",

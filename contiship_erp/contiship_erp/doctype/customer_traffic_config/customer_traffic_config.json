@@ -15,11 +15,11 @@
   "rate",
   "after_75_discounted_rate",
   "section_break_jilm",
+  "add_on_type",
   "container_feet",
   "square_feet_size",
   "ton_size",
   "column_break_yito",
-  "add_on_type",
   "add_on_service"
  ],
  "fields": [
@@ -52,6 +52,7 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Minimum Commitment(No.of.Days)",
+   "read_only_depends_on": "eval:doc.rent_type ==\"Add On\"",
    "width": "0"
   },
   {
@@ -70,30 +71,35 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.rent_type == \"Container Based\"",
    "fieldname": "container_feet",
    "fieldtype": "Int",
    "label": "Container Feet Size",
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.rent_type==\"Sqft Based\"",
    "fieldname": "square_feet_size",
    "fieldtype": "Data",
    "label": "Square Feet Size",
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.rent_type==\"Add On\"",
    "fieldname": "add_on_type",
    "fieldtype": "Data",
    "label": "Add On Type",
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.rent_type==\"Add On\"",
    "fieldname": "add_on_service",
    "fieldtype": "Data",
    "label": "Add On Service",
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.square_feet_size==\"TON\"",
    "fieldname": "ton_size",
    "fieldtype": "Int",
    "label": "TON Size",
@@ -108,6 +114,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.rent_type !=\"Add On\"",
    "fieldname": "enable_75_rule",
    "fieldtype": "Check",
    "label": "Enable 75% Rule"
@@ -117,7 +124,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-14 17:40:28.049362",
+ "modified": "2025-07-15 13:32:12.497940",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Customer Traffic Config",

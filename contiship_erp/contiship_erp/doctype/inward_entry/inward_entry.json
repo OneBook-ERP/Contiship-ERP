@@ -1,43 +1,37 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:INW-{MM}-{#####}",
  "creation": "2025-06-06 00:04:38.036024",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "consignment",
-  "container",
+  "customer",
+  "boeinvoice_no",
+  "invoice_generated",
   "column_break_ltov",
   "arrival_date",
   "cha_name",
+  "monthly_invoice_generated",
+  "section_break_quek",
+  "description",
   "section_break_pcxa",
   "inward_entry_items",
   "section_break_itnv",
   "add_on_services_inward",
-  "amended_from"
+  "amended_from",
+  "tariff_config_tab",
+  "customer_tariff_config"
  ],
  "fields": [
-  {
-   "fieldname": "consignment",
-   "fieldtype": "Link",
-   "label": "Consignment",
-   "options": "Consignment"
-  },
-  {
-   "fieldname": "container",
-   "fieldtype": "Link",
-   "label": "Container",
-   "options": "Container Entry"
-  },
   {
    "fieldname": "column_break_ltov",
    "fieldtype": "Column Break"
   },
   {
+   "default": "Now",
    "fieldname": "arrival_date",
    "fieldtype": "Date",
-   "label": "Arrival Date"
+   "label": "Date"
   },
   {
    "fieldname": "section_break_pcxa",
@@ -61,8 +55,11 @@
    "options": "Add On Services"
   },
   {
+   "fetch_from": "consignment.cha_name",
    "fieldname": "cha_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "CHA Name"
   },
   {
@@ -74,17 +71,73 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "boeinvoice_no",
+   "fieldtype": "Data",
+   "label": "BOE/Invoice No",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "tariff_config_tab",
+   "fieldtype": "Tab Break",
+   "label": "Tariff Config"
+  },
+  {
+   "fieldname": "customer_tariff_config",
+   "fieldtype": "Table",
+   "label": "Customer Tariff Config",
+   "options": "Customer Traffic Config"
+  },
+  {
+   "fieldname": "section_break_quek",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "invoice_generated",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Invoice Generated"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "monthly_invoice_generated",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Monthly Invoice Generated"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2025-07-14 17:24:05.676770",
+ "links": [
+  {
+   "link_doctype": "Sales Invoice",
+   "link_fieldname": "custom_reference_docname"
+  }
+ ],
+ "modified": "2025-07-16 13:42:10.505851",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
- "naming_rule": "Expression",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -103,5 +156,6 @@
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "boeinvoice_no"
 }
