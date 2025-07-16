@@ -9,8 +9,10 @@
   "add_on_item",
   "type",
   "service",
+  "column_break_pbky",
   "rate",
-  "qty"
+  "qty",
+  "description"
  ],
  "fields": [
   {
@@ -18,7 +20,6 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Add On Item",
-   "link_filters": "[[\"Item\",\"custom_rent_type\",\"=\",\"Add On\"]]",
    "options": "Item",
    "reqd": 1
   },
@@ -47,15 +48,26 @@
   {
    "fieldname": "qty",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Qty",
-   "read_only": 1
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Description"
+  },
+  {
+   "fieldname": "column_break_pbky",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-14 14:56:19.537200",
+ "modified": "2025-07-16 16:08:03.679429",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Add On Services",

@@ -6,30 +6,74 @@ from frappe.model.document import Document
 
 
 class InwardEntry(Document):
-    pass
+
+    def validate(self):
+        inward_total_qty = sum(row.qty or 0 for row in self.inward_entry_items)
+        addon_total_qty = sum(row.qty or 0 for row in self.add_on_services_inward)
+
+        if addon_total_qty > inward_total_qty:
+            frappe.throw(f"Total quantity mismatch: Inward Entry Items = {inward_total_qty}, Add-on Services = {addon_total_qty}")
+
+    def on_submit(self):
+        frappe.enqueue("contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.create_sales_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", inward_entry=self.name)
+
+@frappe.whitelist()
+def create_sales_invoice(inward_entry):
+    inward_entry = frappe.get_doc("Inward Entry", inward_entry)
+
+    if not inward_entry.add_on_services_inward:
+        frappe.throw("No Add-on items found in this Inward Entry.")
+
+    sales_invoice = frappe.new_doc("Sales Invoice")
+    sales_invoice.customer = inward_entry.customer
+    sales_invoice.custom_reference_doctype = "Inward Entry"
+    sales_invoice.custom_reference_docname = inward_entry.name
+    sales_invoice.custom_invoice_type = "Add-on Billing"
+
+    for row in inward_entry.add_on_services_inward:
+        if not row.add_on_item:
+            continue
+
+        sales_invoice.append("items", {
+            "item_code": row.add_on_item,
+            "qty": row.qty,            
+            "rate": row.rate,
+            "description": row.description            
+        })
+
+    if not sales_invoice.items:
+        frappe.throw("No valid Add-on items to invoice.")
+
+    sales_invoice.save()
+    # sales_invoice.submit()
+
+    return sales_invoice.name
+
 
 @frappe.whitelist()
 def get_containers(doctype, txt, searchfield, start, page_len, filters):
     """Return containers for the selected consignment with display text as 'ConsignmentID - Item Name'"""
     consignment = filters.get('consignment')
+    exclude = filters.get("exclude", [])
     if not consignment:
-        return []
-    
-    # Get all container entries for this consignment with item details
+        return []   
+
     containers = frappe.db.sql("""
-        SELECT ce.name, ce.containers, i.item_name 
-        FROM `tabContainer Entry` ce
-        LEFT JOIN `tabItem` i ON ce.containers = i.name
-        WHERE ce.parent = %(consignment)s
-    """, {'consignment': consignment}, as_dict=1)
-    
-    # Format as [value, description] where description is 'ConsignmentID - Item Name'
+        SELECT ce.name, ce.container, ce.item, ce.grade
+        FROM `tabInward Entry Item` ce        
+        WHERE ce.parent = %(consignment)s AND ce.name NOT IN %(exclude)s
+    """, {'consignment': consignment,"exclude": tuple(exclude) if exclude else ('',)}, as_dict=1)
+
     result = []
     for container in containers:
-        display_text = f"{consignment} - {container.item_name or container.containers}"
+        display_text = f"{consignment} - {container.container}"
         result.append([container.name, display_text])
     
     return result
+
+@frappe.whitelist()
+def get_traffic_config(customer):
+    return frappe.get_doc("Customer", customer)
 
 @frappe.whitelist()
 def get_container_details(container_id):

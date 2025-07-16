@@ -21,15 +21,15 @@ class OutwardEntry(Document):
                 SELECT SUM(ii.qty)
                 FROM `tabInward Entry Item` ii
                 JOIN `tabInward Entry` ie ON ie.name = ii.parent
-                WHERE ie.consignment = %s AND ie.container = %s AND ii.item = %s
-            """, (row.consignment, row.container, row.item))[0][0] or 0
+                WHERE ie.name = %s AND ii.name = %s AND ii.item = %s
+            """, (self.consignment, row.container, row.item))[0][0] or 0
             
             used_outward = frappe.db.sql("""
                 SELECT SUM(oi.qty)
                 FROM `tabOutward Entry Items` oi
                 JOIN `tabOutward Entry` o ON o.name = oi.parent
-                WHERE oi.consignment = %s AND oi.container = %s AND oi.item = %s AND o.name != %s
-            """, (row.consignment, row.container, row.item, self.name))[0][0] or 0
+                WHERE o.consignment = %s AND oi.container = %s AND oi.item = %s AND o.name != %s
+            """, (self.consignment, row.container, row.item, self.name))[0][0] or 0
             
             available = total_inward - used_outward
             
@@ -58,12 +58,12 @@ def get_inward_filter(doctype, txt, searchfield, start, page_len, filters):
     if not consignment or not container:
         return []
 
-    return frappe.db.sql("""
-        SELECT DISTINCT iei.item
+    items = frappe.db.sql("""
+        SELECT DISTINCT iei.item, iei.grade
         FROM `tabInward Entry Item` iei
         JOIN `tabInward Entry` ie ON ie.name = iei.parent
-        WHERE ie.consignment = %(consignment)s
-          AND ie.container = %(container)s
+        WHERE ie.name = %(consignment)s
+          AND iei.name = %(container)s
           AND iei.item LIKE %(txt)s
         LIMIT %(page_len)s OFFSET %(start)s
     """, {
@@ -72,7 +72,15 @@ def get_inward_filter(doctype, txt, searchfield, start, page_len, filters):
         "txt": f"%{txt}%",
         "page_len": page_len,
         "start": start
-    })
+    }, as_dict=1)
+
+    result = []
+    for item in items:
+        display_text = item["item"] + (f" - {item['grade']}" if item.get("grade") else "")
+        result.append([item["item"], display_text])
+
+    return result
+
 
 
 @frappe.whitelist()
@@ -82,26 +90,27 @@ def get_inward_item_details(consignment, container, item_code):
 
     result = frappe.db.sql("""
         SELECT 
-            iei.item, iei.qty, iei.uom, iei.batch,
+            iei.item, iei.qty, iei.uom, iei.grade_item, iei.grade,
             (
                 SELECT SUM(oi.qty)
                 FROM `tabOutward Entry Items` oi
                 JOIN `tabOutward Entry` o ON o.name = oi.parent
-                WHERE oi.consignment = %(consignment)s
-                  AND oi.container = %(container)s
-                  AND oi.item = iei.item
+                WHERE o.consignment = %(consignment)s
+                AND oi.container = %(container)s
+                AND oi.item = iei.item
             ) AS used_qty
         FROM `tabInward Entry Item` iei
         JOIN `tabInward Entry` ie ON ie.name = iei.parent
-        WHERE ie.consignment = %(consignment)s
-          AND ie.container = %(container)s
-          AND iei.item = %(item)s
+        WHERE ie.name = %(consignment)s
+        AND iei.name = %(container)s
+        AND iei.item = %(item)s
         LIMIT 1
     """, {
         "consignment": consignment,
         "container": container,
         "item": item_code
     }, as_dict=True)
+
 
     if not result:
         return
@@ -115,8 +124,9 @@ def get_inward_item_details(consignment, container, item_code):
 
     return {
         "qty": remaining_qty,
-        "uom": row.uom,
-        "batch": row.batch
+        "uom": row.uom,       
+        "grade_item":row.grade_item,
+        "grade":row.grade
     }
    
     
@@ -409,72 +419,58 @@ def get_inward_item_details(consignment, container, item_code):
 #         })
 #     return items
 
+
+
 @frappe.whitelist()
 def create_sales_invoice(outward_entry):
     try:
         frappe.log_error("outward_entry", outward_entry)
         doc = frappe.get_doc("Outward Entry", outward_entry)
 
-        matching_items = []
-        addon_items = []
+        matching_items = []        
         unique_consignments = set()
         unique_containers = set()
 
         for item in doc.items:
-            if item.consignment:
-                unique_consignments.add(item.consignment)
+            if doc.consignment:
+                unique_consignments.add(doc.consignment)
             if item.container:
                 unique_containers.add(item.container)
 
         if not unique_consignments:
-            frappe.throw("No valid consignments found in the outward entry items")
-
-        for consignment_id in unique_consignments:
-            outwards = frappe.get_all("Outward Entry", filters={"consignment": consignment_id}, fields=["name"])
-            for entry in outwards:
-                outward_doc = frappe.get_doc("Outward Entry", entry.name)
-                if hasattr(outward_doc, 'add_on_services_outward'):
-                    addon_items += get_add_on_service_items(outward_doc.add_on_services_outward or [])
-
-            inwards = frappe.get_all("Inward Entry", filters={"consignment": consignment_id}, fields=["name"])
-            for entry in inwards:
-                inward_doc = frappe.get_doc("Inward Entry", entry.name)
-                if hasattr(inward_doc, 'add_on_services_inward'):
-                    addon_items += get_add_on_service_items(inward_doc.add_on_services_inward or [])
-
-        matching_items.extend(addon_items)
+            frappe.log_error("No valid consignments found in the outward entry items")
 
         consignment_id = next(iter(unique_consignments))
-        consignment = frappe.get_doc("Consignment", consignment_id)
+        consignment = frappe.get_doc("Inward Entry", consignment_id)
 
         if consignment.invoice_generated:
-            frappe.throw("Invoice already generated for this consignment")
+            frappe.log_error("Invoice already generated for this consignment")
 
         today = getdate()
-        traffic_config = consignment.customer_traffic_config or []
+        traffic_config = consignment.customer_tariff_config or []
         if not traffic_config and consignment.customer:
             customer = frappe.get_doc("Customer", consignment.customer)
             traffic_config = customer.customer_traffic_config
         if not traffic_config:
-            frappe.throw("Customer Traffic Config not found")
+            frappe.log_error("Customer Tariff Config not found")
 
         from collections import defaultdict
         sqft_by_date = defaultdict(list)
         item_map = {}
 
         for container_id in unique_containers:
-            container = frappe.get_doc("Container Entry", container_id)
+            container = frappe.get_doc("Inward Entry Item", container_id)
 
             total_inward = frappe.db.sql("""
                 SELECT SUM(ii.qty) FROM `tabInward Entry Item` ii
                 JOIN `tabInward Entry` ie ON ie.name = ii.parent
-                WHERE ie.consignment = %s AND ie.container = %s
+                WHERE ie.name = %s AND ii.name = %s
             """, (consignment_id, container_id))[0][0] or 0
 
             used_outward = frappe.db.sql("""
                 SELECT SUM(oi.qty) FROM `tabOutward Entry Items` oi
                 JOIN `tabOutward Entry` o ON o.name = oi.parent
-                WHERE oi.consignment = %s AND oi.container = %s
+                WHERE o.consignment = %s AND oi.container = %s
             """, (consignment_id, container_id))[0][0] or 0
 
             if total_inward != used_outward:
@@ -483,7 +479,7 @@ def create_sales_invoice(outward_entry):
             outward_date = frappe.db.sql("""
                 SELECT MAX(o.date) FROM `tabOutward Entry` o
                 JOIN `tabOutward Entry Items` oi ON oi.parent = o.name
-                WHERE oi.consignment = %s AND oi.container = %s
+                WHERE o.consignment = %s AND oi.container = %s
             """, (consignment_id, container_id))[0][0]
 
             if not outward_date:
@@ -498,7 +494,7 @@ def create_sales_invoice(outward_entry):
                 SELECT o.date, SUM(oi.qty) AS qty
                 FROM `tabOutward Entry` o
                 JOIN `tabOutward Entry Items` oi ON oi.parent = o.name
-                WHERE oi.consignment = %s AND oi.container = %s
+                WHERE o.consignment = %s AND oi.container = %s
                 GROUP BY o.date
                 ORDER BY o.date ASC
             """, (consignment_id, container_id), as_dict=True)
@@ -578,7 +574,7 @@ def create_sales_invoice(outward_entry):
                     "description": (
                         f"From {arrival_date.strftime('%d.%m.%y')} to {outward_date.strftime('%d.%m.%y')}<br>"
                         f"{duration} Days * {rate} = {rate * duration}<br>"
-                        f"({block_count}*{block_size})"
+                        f"({block_count}*{round(block_size/10)})"
                     )
                 }
 
@@ -613,7 +609,7 @@ def create_sales_invoice(outward_entry):
                         "description": (
                             f"From {arrival_date.strftime('%d.%m.%y')} to {outward_date.strftime('%d.%m.%y')}<br>"
                             f"{duration} Days * {rate_500} = {rate_500 * duration}<br>"
-                            f"(1*{remaining_sqft})"
+                            f"(1*{round(remaining_sqft/10)})"
                         )
                     }
 
@@ -626,7 +622,7 @@ def create_sales_invoice(outward_entry):
             "doctype": "Sales Invoice",
             "customer": consignment.customer,
             "posting_date": today,
-            "custom_reference_doctype": "Consignment",
+            "custom_reference_doctype": "Inward Entry",
             "custom_reference_docname": consignment.name,
             "custom_invoice_type": "Immediate Billing",
             "items": matching_items
@@ -634,26 +630,10 @@ def create_sales_invoice(outward_entry):
         invoice.insert()
 
         consignment.invoice_generated = 1
-        consignment.final_invoice_link = invoice.name
+        consignment.sales_invoice = invoice.name
         consignment.save()
 
         return invoice.name
 
     except Exception:
         frappe.log_error(frappe.get_traceback(), f"Failed to create invoice for outward entry {outward_entry}")
-
-
-def get_add_on_service_items(add_on_services):
-    items = []
-    for row in add_on_services:
-        if not row.add_on_item or not row.rate:
-            continue
-        items.append({
-            "item_code": row.add_on_item,
-            "item_name": row.service or row.type,
-            "description": f"{row.type} - {row.service}",
-            "qty": row.qty or 1,
-            "rate": row.rate or 0,
-            "uom": "Nos"
-        })
-    return items
