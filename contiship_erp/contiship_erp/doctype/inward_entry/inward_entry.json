@@ -135,9 +135,13 @@
   {
    "link_doctype": "Sales Invoice",
    "link_fieldname": "custom_reference_docname"
+  },
+  {
+   "link_doctype": "Outward Entry",
+   "link_fieldname": "consignment"
   }
  ],
- "modified": "2025-07-18 14:20:48.102355",
+ "modified": "2025-07-19 11:03:00.059275",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
