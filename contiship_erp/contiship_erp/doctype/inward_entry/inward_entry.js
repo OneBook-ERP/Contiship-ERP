@@ -52,7 +52,10 @@ frappe.ui.form.on('Inward Entry', {
                 ]
             };
         };
-    }
+    },
+    // boeinvoice_no(frm){
+    //     frm.doc.consignment = frm.doc.boeinvoice_no
+    // }
 });
 
 frappe.ui.form.on('Inward Entry Item', {

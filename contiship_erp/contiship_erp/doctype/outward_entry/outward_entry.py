@@ -1,6 +1,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate
+from contiship_erp.custom.traffic_custom import create_monthly_sales_invoice
 
 class OutwardEntry(Document):
 
@@ -8,6 +9,7 @@ class OutwardEntry(Document):
         self.calculate_available_space()       
 
     def on_submit(self):
+        # create_monthly_sales_invoice()
         frappe.enqueue("contiship_erp.contiship_erp.doctype.outward_entry.outward_entry.create_sales_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", outward_entry=self.name)
    
     def calculate_available_space(self):
@@ -129,6 +131,51 @@ def get_inward_item_details(consignment, container, item_code):
         "grade":row.grade
     }
    
+@frappe.whitelist()
+def get_all_inward_items(consignment):
+    if not consignment:
+        return []
+
+    result = frappe.db.sql("""
+        SELECT 
+            iei.name as container,
+            iei.item,
+            iei.qty,
+            iei.uom,
+            iei.grade_item,
+            iei.grade,
+            (
+                SELECT SUM(oi.qty)
+                FROM `tabOutward Entry Items` oi
+                JOIN `tabOutward Entry` o ON o.name = oi.parent
+                WHERE o.consignment = %(consignment)s
+                AND oi.container = iei.name
+                AND oi.item = iei.item
+            ) AS used_qty
+        FROM `tabInward Entry Item` iei
+        JOIN `tabInward Entry` ie ON ie.name = iei.parent
+        WHERE ie.name = %(consignment)s
+    """, {
+        "consignment": consignment
+    }, as_dict=True)
+
+    items = []
+    for row in result:
+        used = row.used_qty or 0
+        remaining_qty = row.qty - used
+
+        if remaining_qty > 0:
+            items.append({
+                "container": row.container,
+                "item": row.item,
+                "qty": remaining_qty,
+                "uom": row.uom,
+                "grade_item": row.grade_item,
+                "grade": row.grade
+            })
+
+    return items
+
     
 # @frappe.whitelist()
 # def get_inward_items(consignment, name):
@@ -424,7 +471,7 @@ def get_inward_item_details(consignment, container, item_code):
 @frappe.whitelist()
 def create_sales_invoice(outward_entry):
     try:
-        frappe.log_error("outward_entry", outward_entry)
+        # frappe.log_error("outward_entry", outward_entry)
         doc = frappe.get_doc("Outward Entry", outward_entry)
 
         matching_items = []        
@@ -488,7 +535,9 @@ def create_sales_invoice(outward_entry):
             arrival_date = getdate(container.container_arrival_date)
             outward_date = getdate(outward_date)
             days_stayed = (outward_date - arrival_date).days or 1
-            threshold_qty = total_inward * 0.75
+            threshold_qty_75 = total_inward * 0.75
+            threshold_qty_87_5 = total_inward * 0.875
+
 
             outward_dates = frappe.db.sql("""
                 SELECT o.date, SUM(oi.qty) AS qty
@@ -499,13 +548,17 @@ def create_sales_invoice(outward_entry):
                 ORDER BY o.date ASC
             """, (consignment_id, container_id), as_dict=True)
 
-            apply_discount = False
+            apply_75_discount = False
+            apply_87_5_discount = False
             remaining_qty = total_inward
             for row in outward_dates:
                 remaining_qty -= row.qty or 0
-                if remaining_qty <= threshold_qty and outward_date == getdate(row.date):
-                    apply_discount = True
-                    break
+                if outward_date == getdate(row.date):
+                    if remaining_qty <= threshold_qty_75:
+                        apply_75_discount = True
+                    if remaining_qty <= threshold_qty_87_5:
+                        apply_87_5_discount = True
+
 
             raw_sqft = int(container.container_size or 0) * 10
 
@@ -516,7 +569,13 @@ def create_sales_invoice(outward_entry):
                     continue
 
                 duration = max(days_stayed, traffic.minimum_commitmentnoofdays or 1)
-                rate = traffic.after_75_discounted_rate if (traffic.enable_75_rule and apply_discount) else traffic.rate
+                if traffic.enable_75_rule and apply_75_discount:
+                    rate = traffic.after_75_discounted_rate
+                elif traffic.enable_875_rule and apply_87_5_discount:
+                    rate = traffic.after_875discounted_rate
+                else:
+                    rate = traffic.rate
+
 
                 if service_item.custom_rent_type == "Container Based":
                     if str(container.container_size) == str(service_item.custom_container_feat_size):
@@ -563,7 +622,12 @@ def create_sales_invoice(outward_entry):
 
                 remaining_sqft -= block_count * block_size
                 duration = max(min_days, config.minimum_commitmentnoofdays or 1)
-                rate = config.after_75_discounted_rate if (config.enable_75_rule and apply_discount) else config.rate
+                if config.enable_75_rule and apply_75_discount:
+                    rate = config.after_75_discounted_rate
+                elif config.enable_875_rule and apply_87_5_discount:
+                    rate = config.after_875discounted_rate
+                else:
+                    rate = config.rate
 
                 key = f"{config.service_type}|{arrival_date}|{outward_date}|{block_size}"
                 item_map[key] = {
@@ -579,39 +643,29 @@ def create_sales_invoice(outward_entry):
                 }
 
             if remaining_sqft > 0:
-                sqft_500_item = frappe.get_all(
-                    "Item",
-                    filters={"custom_rent_type": "Sqft Based", "custom_square_feet_size": 500},
-                    fields=["name"], limit=1
-                )
-                if sqft_500_item:
-                    sqft_500_item_code = sqft_500_item[0].name
-                    duration = max(min_days, 1)
-                    price_data = frappe.db.get_value(
-                        "Item Price",
-                        {"item_code": sqft_500_item_code, "price_list": "Standard Selling", "selling": 1},
-                        ["price_list_rate", "valid_from", "valid_upto"], as_dict=True
-                    )
-                    rate_500 = price_data.price_list_rate if price_data else 1
+                config_500 = next((cfg for cfg in sqft_configs if cfg.square_feet_size == 500), None)
+                if config_500:
+                    duration = max(min_days, config_500.minimum_commitmentnoofdays or 1)
+                    if config_500.enable_75_rule and apply_75_discount:
+                        rate_500 = config_500.after_75_discounted_rate
+                    elif config_500.enable_875_rule and apply_87_5_discount:
+                        rate_500 = config_500.after_875discounted_rate
+                    else:
+                        rate_500 = config_500.rate
 
-                    if price_data:
-                        valid_from = getdate(price_data.valid_from) if price_data.valid_from else None
-                        valid_upto = getdate(price_data.valid_upto) if price_data.valid_upto else None
-                        if (valid_from and today < valid_from) or (valid_upto and today > valid_upto):
-                            rate_500 = 1
-
-                    key = f"{sqft_500_item_code}|{arrival_date}|{outward_date}|500"
+                    key = f"{config_500.service_type}|{arrival_date}|{end_date}|500"
                     item_map[key] = {
-                        "item_code": sqft_500_item_code,
+                        "item_code": config_500.service_type,
                         "qty": 1,
                         "uom": "Day",
                         "rate": rate_500 * duration,
                         "description": (
-                            f"From {arrival_date.strftime('%d.%m.%y')} to {outward_date.strftime('%d.%m.%y')}<br>"
+                            f"From {arrival_date.strftime('%d.%m.%y')} to {end_date.strftime('%d.%m.%y')}<br>"
                             f"{duration} Days * {rate_500} = {rate_500 * duration}<br>"
                             f"(1*{round(remaining_sqft/10)})"
                         )
                     }
+
 
         matching_items.extend([i for i in item_map.values() if i["qty"] > 0])
 
@@ -630,7 +684,7 @@ def create_sales_invoice(outward_entry):
         invoice.insert()
 
         consignment.invoice_generated = 1
-        consignment.sales_invoice = invoice.name
+        # consignment.sales_invoice = invoice.name
         consignment.save()
 
         return invoice.name

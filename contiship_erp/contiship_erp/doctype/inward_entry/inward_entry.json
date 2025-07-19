@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:INW-{MM}-{#####}",
  "creation": "2025-06-06 00:04:38.036024",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -42,7 +43,8 @@
    "fieldname": "inward_entry_items",
    "fieldtype": "Table",
    "label": "Inward Entry Items",
-   "options": "Inward Entry Item"
+   "options": "Inward Entry Item",
+   "reqd": 1
   },
   {
    "fieldname": "section_break_itnv",
@@ -83,6 +85,8 @@
   {
    "fieldname": "boeinvoice_no",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "BOE/Invoice No",
    "reqd": 1,
    "unique": 1
@@ -133,11 +137,11 @@
    "link_fieldname": "custom_reference_docname"
   }
  ],
- "modified": "2025-07-16 13:42:10.505851",
+ "modified": "2025-07-18 14:20:48.102355",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
- "naming_rule": "Set by user",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -154,8 +158,8 @@
   }
  ],
  "row_format": "Dynamic",
+ "search_fields": "boeinvoice_no",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "title_field": "boeinvoice_no"
+ "states": []
 }

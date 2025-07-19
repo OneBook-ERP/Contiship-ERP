@@ -7,7 +7,7 @@ from frappe.model.document import Document
 
 class InwardEntry(Document):
 
-    def validate(self):
+    def validate(self):        
         inward_total_qty = sum(row.qty or 0 for row in self.inward_entry_items)
         addon_total_qty = sum(row.qty or 0 for row in self.add_on_services_inward)
 
@@ -15,7 +15,8 @@ class InwardEntry(Document):
             frappe.throw(f"Total quantity mismatch: Inward Entry Items = {inward_total_qty}, Add-on Services = {addon_total_qty}")
 
     def on_submit(self):
-        frappe.enqueue("contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.create_sales_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", inward_entry=self.name)
+        if self.add_on_services_inward:
+            frappe.enqueue("contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.create_sales_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", inward_entry=self.name)
 
 @frappe.whitelist()
 def create_sales_invoice(inward_entry):
