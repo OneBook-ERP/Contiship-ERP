@@ -11,9 +11,11 @@
   "column_break_vhnc",
   "minimum_commitmentnoofdays",
   "enable_75_rule",
+  "after_75_discounted_rate",
   "column_break_sfuh",
   "rate",
-  "after_75_discounted_rate",
+  "enable_875_rule",
+  "after_875discounted_rate",
   "section_break_jilm",
   "add_on_type",
   "container_feet",
@@ -118,13 +120,27 @@
    "fieldname": "enable_75_rule",
    "fieldtype": "Check",
    "label": "Enable 75% Rule"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.rent_type !=\"Add On\"",
+   "fieldname": "enable_875_rule",
+   "fieldtype": "Check",
+   "label": "Enable 87.5% Rule"
+  },
+  {
+   "depends_on": "eval:doc.enable_875_rule",
+   "fieldname": "after_875discounted_rate",
+   "fieldtype": "Currency",
+   "label": "After 87.5%(Discounted Rate)",
+   "mandatory_depends_on": "eval:doc.enable_875_rule"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-15 13:32:12.497940",
+ "modified": "2025-07-18 10:44:27.460243",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Customer Traffic Config",
