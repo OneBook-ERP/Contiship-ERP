@@ -135,9 +135,9 @@ def run_day_before_last_day():
 def create_monthly_sales_invoice():
     frappe.log_error("Monthly Invoice")
 
-    # Uncomment to run only day before last day
-    # if not run_day_before_last_day():
-    #     return
+    
+    if not run_day_before_last_day():
+        return
 
     today = getdate(nowdate())
     from_date = today.replace(day=1)

@@ -1,7 +1,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate
-from contiship_erp.custom.traffic_custom import create_monthly_sales_invoice
+# from contiship_erp.custom.traffic_custom import create_monthly_sales_invoice
 
 class OutwardEntry(Document):
 
