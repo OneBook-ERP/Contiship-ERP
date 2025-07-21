@@ -25,6 +25,7 @@ def get_columns():
 
     ]
 
+
 def get_data(filters):
 	conditions = ""
 	values = {}
@@ -37,22 +38,16 @@ def get_data(filters):
 		})
 
 	if filters.get("customer"):
-		customer_list = frappe.parse_json(filters["customer"])
-		if customer_list:
-			conditions += " AND ie.customer IN %(customer_list)s"
-			values["customer_list"] = customer_list
+		conditions += " AND ie.customer = %(customer)s"
+		values["customer"] = filters["customer"]
 
 	if filters.get("item"):
-		item_list = frappe.parse_json(filters["item"])
-		if item_list:
-			conditions += " AND ied.item IN %(item_list)s"
-			values["item_list"] = item_list
+		conditions += " AND ied.item = %(item)s"
+		values["item"] = filters["item"]
 
 	if filters.get("consignment"):
-		consignment_list = frappe.parse_json(filters["consignment"])
-		if consignment_list:
-			conditions += " AND ie.name IN %(consignment_list)s"
-			values["consignment_list"] = consignment_list
+		conditions += " AND ie.name = %(consignment)s"
+		values["consignment"] = filters["consignment"]
 
 	return frappe.db.sql("""
 		SELECT

@@ -211,6 +211,20 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
 
 
         arrival_date = getdate(container.container_arrival_date)
+        
+        last_invoice = frappe.db.sql("""
+                SELECT posting_date
+                FROM `tabSales Invoice`
+                WHERE docstatus = 1
+                AND custom_reference_docname = %s
+                AND custom_invoice_type = 'Monthly Billing'
+                ORDER BY posting_date DESC
+                LIMIT 1
+            """, (consignment_id,), as_dict=True)
+
+        if last_invoice:
+            arrival_date = getdate(last_invoice[0].posting_date)
+
         end_date = getdate(outward_date) if outward_date else billing_date
         days_stayed = (end_date - arrival_date).days or 1
 
