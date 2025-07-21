@@ -1,15 +1,14 @@
 // Copyright (c) 2025, OneBook and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Consignment Report"] = {
+frappe.query_reports["Inward Report"] = {
 	"filters": [
 		{
 			fieldname: "customer",
 			label: "Customer",
 			fieldtype: "Link",
-			options: "Customer",
-			width: 150
-		},		
+			options: "Customer"
+		},
 		{
 			fieldname: "consignment",
 			label: "Consignment",
@@ -17,24 +16,20 @@ frappe.query_reports["Consignment Report"] = {
 			options: "Inward Entry",
 			get_query: () => {
 				let customer = frappe.query_report.get_filter_value("customer");
-				let filters = {};
-
 				if (customer) {
-					filters.customer = customer;
+					return {
+						filters: {
+							customer: customer
+						}
+					};
 				}
-
-				return {
-					filters: filters
-				};
-			},
-			width: 150
-		},				
+			}
+		},
 		{
 			fieldname: "item",
 			label: "Item",
 			fieldtype: "Link",
-			options: "Item",
-			width: 150
+			options: "Item"
 		},
 		{
 			fieldname: "from_date",
@@ -49,22 +44,7 @@ frappe.query_reports["Consignment Report"] = {
 			fieldtype: "Date",
 			default: frappe.datetime.get_today(),
 			reqd: 1
-		}	
-	],
-
-	formatter: function(value, row, column, data, default_formatter) {
-		value = default_formatter(value, row, column, data);
-
-		if (column.fieldname === "inward_qty") {
-			return `<span style="color: green; font-weight: bold;">${value}</span>`;
 		}
-		if (column.fieldname === "available_qty") {
-			return `<span style="color: black; font-weight: bold;">${value}</span>`;
-		}
-		if (column.fieldname === "outward_qty") {
-			return `<span style="color: red; font-weight: bold;">${value}</span>`;
-		}
-
-		return value;
-	}
+	]
 };
+

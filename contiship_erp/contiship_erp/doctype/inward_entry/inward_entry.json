@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "format:INW-{MM}-{#####}",
  "creation": "2025-06-06 00:04:38.036024",
@@ -88,8 +89,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "BOE/Invoice No",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "tariff_config_tab",
@@ -141,7 +141,7 @@
    "link_fieldname": "consignment"
   }
  ],
- "modified": "2025-07-19 11:03:00.059275",
+ "modified": "2025-07-21 14:44:36.208824",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",

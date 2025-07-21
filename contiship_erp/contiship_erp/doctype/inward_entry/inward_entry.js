@@ -71,12 +71,13 @@ frappe.ui.form.on('Inward Entry Item', {
 });
 
 function update_addon_qty_total(frm) {
-    const total_qty = frm.doc.inward_entry_items?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0;
+    const line_item_count = frm.doc.inward_entry_items?.length || 0;
 
     frm.doc.add_on_services_inward?.forEach(row => {
-        frappe.model.set_value(row.doctype, row.name, 'qty', total_qty);
+        frappe.model.set_value(row.doctype, row.name, 'qty', line_item_count);
     });
 }
+
 
 frappe.ui.form.on('Add On Services', {
     add_on_item(frm, cdt, cdn) {

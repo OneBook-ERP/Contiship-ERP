@@ -7,12 +7,12 @@ from frappe.model.document import Document
 
 class InwardEntry(Document):
 
-    def validate(self):        
-        inward_total_qty = sum(row.qty or 0 for row in self.inward_entry_items)
-        addon_total_qty = sum(row.qty or 0 for row in self.add_on_services_inward)
+    # def validate(self):        
+    #     inward_total_qty = sum(row.qty or 0 for row in self.inward_entry_items)
+    #     addon_total_qty = sum(row.qty or 0 for row in self.add_on_services_inward)
 
-        if addon_total_qty > inward_total_qty:
-            frappe.throw(f"Total quantity mismatch: Inward Entry Items = {inward_total_qty}, Add-on Services = {addon_total_qty}")
+    #     if addon_total_qty > inward_total_qty:
+    #         frappe.throw(f"Total quantity mismatch: Inward Entry Items = {inward_total_qty}, Add-on Services = {addon_total_qty}")
 
     def on_submit(self):
         if self.add_on_services_inward:
@@ -37,7 +37,7 @@ def create_sales_invoice(inward_entry):
 
         sales_invoice.append("items", {
             "item_code": row.add_on_item,
-            "qty": row.qty,            
+            "qty": row.qty or 1,            
             "rate": row.rate,
             "description": row.description            
         })
