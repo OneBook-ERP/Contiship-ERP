@@ -21,6 +21,7 @@
   "container_feet",
   "square_feet_size",
   "ton_size",
+  "lcl_type",
   "column_break_yito",
   "add_on_service"
  ],
@@ -134,13 +135,21 @@
    "fieldtype": "Currency",
    "label": "After 87.5%(Discounted Rate)",
    "mandatory_depends_on": "eval:doc.enable_875_rule"
+  },
+  {
+   "depends_on": "eval:doc.rent_type ==\"LCL\"",
+   "fetch_from": "service_type.custom_lcl_type",
+   "fieldname": "lcl_type",
+   "fieldtype": "Data",
+   "label": "LCL Type",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-19 12:54:05.643063",
+ "modified": "2025-07-23 11:27:38.586741",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Customer Traffic Config",

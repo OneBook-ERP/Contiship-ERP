@@ -59,7 +59,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Container Size",
-   "options": "\n20\n40",
+   "options": "\n20\n40\nTata Ac\nEicher\nLorry\nTaurus1\nTaurus2",
    "reqd": 1
   },
   {
@@ -101,7 +101,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-21 14:39:42.979833",
+ "modified": "2025-07-23 10:11:00.057940",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry Item",

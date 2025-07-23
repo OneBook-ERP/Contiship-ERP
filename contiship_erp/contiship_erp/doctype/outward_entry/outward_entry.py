@@ -504,13 +504,13 @@ def create_sales_invoice(outward_entry):
                 SELECT SUM(ii.qty) FROM `tabInward Entry Item` ii
                 JOIN `tabInward Entry` ie ON ie.name = ii.parent
                 WHERE ie.name = %s AND ii.name = %s
-            """, (consignment_id, container_id))[0][0] or 0
+            """, (consignment.name, container_id))[0][0] or 0
 
             used_outward = frappe.db.sql("""
                 SELECT SUM(oi.qty) FROM `tabOutward Entry Items` oi
                 JOIN `tabOutward Entry` o ON o.name = oi.parent
                 WHERE o.consignment = %s AND oi.container = %s
-            """, (consignment_id, container_id))[0][0] or 0
+            """, (consignment.name, container_id))[0][0] or 0
 
             if total_inward != used_outward:
                 continue
@@ -519,7 +519,7 @@ def create_sales_invoice(outward_entry):
                 SELECT MAX(o.date) FROM `tabOutward Entry` o
                 JOIN `tabOutward Entry Items` oi ON oi.parent = o.name
                 WHERE o.consignment = %s AND oi.container = %s
-            """, (consignment_id, container_id))[0][0]
+            """, (consignment.name, container_id))[0][0]
 
             if not outward_date:
                 continue
@@ -534,7 +534,7 @@ def create_sales_invoice(outward_entry):
                 AND custom_invoice_type = 'Monthly Billing'
                 ORDER BY posting_date DESC
                 LIMIT 1
-            """, (consignment_id,), as_dict=True)
+            """, (consignment.name), as_dict=True)
 
             if last_invoice:
                 arrival_date = getdate(last_invoice[0].posting_date)
@@ -552,7 +552,7 @@ def create_sales_invoice(outward_entry):
                 WHERE o.consignment = %s AND oi.container = %s
                 GROUP BY o.date
                 ORDER BY o.date ASC
-            """, (consignment_id, container_id), as_dict=True)
+            """, (consignment.name, container_id), as_dict=True)
 
             apply_75_discount = False
             apply_87_5_discount = False
@@ -566,7 +566,7 @@ def create_sales_invoice(outward_entry):
                         apply_87_5_discount = True
 
 
-            raw_sqft = int(container.container_size or 0) * 10
+            raw_sqft = int(container.container_size or 0) * 10 if container.container_size in ["20", "40"] else ""
 
             for traffic in traffic_config:
                 service_item = frappe.get_doc("Item", traffic.service_type)
@@ -583,6 +583,23 @@ def create_sales_invoice(outward_entry):
                     rate = traffic.rate
 
 
+                if container.container_size not in ["20", "40"]:
+                    if str(container.container_size) == str(service_item.custom_lcl_type):
+                        key = f"{traffic.service_type}|{arrival_date}|{outward_date}|LCL"
+                        item_map[key] = {
+                            "item_code": traffic.service_type,
+                            "qty": 1,
+                            "uom": "Day",
+                            "rate": rate * duration,
+                            "description": (
+                                f"From {arrival_date.strftime('%d.%m.%y')} to {outward_date.strftime('%d.%m.%y')}<br>"
+                                f"{duration} Days * {rate} = {rate * duration}<br>"
+                                f"(1 * {container.container_size})"
+                            )
+                        }
+
+
+
                 if service_item.custom_rent_type == "Container Based":
                     if str(container.container_size) == str(service_item.custom_container_feat_size):
                         key = f"{traffic.service_type}|{arrival_date}|{outward_date}|container"
@@ -596,7 +613,8 @@ def create_sales_invoice(outward_entry):
                                 f"{duration} Days * {rate} = {rate * duration}<br>"
                                 f"(1*{container.container_size})"
                             )
-                        }
+                        }                
+                    
 
                 elif service_item.custom_rent_type == "Sqft Based":
                     sqft_by_date[outward_date].append({
