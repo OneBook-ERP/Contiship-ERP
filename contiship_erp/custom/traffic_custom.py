@@ -35,6 +35,19 @@ def fetch_item_data(service_type):
             elif item.custom_container_feat_size == "40":
                 result["container_feet"] = "40"
                 result["min_commitment"] = item.custom_container_min_commitment
+        elif item.custom_rent_type == "LCL":
+            result["rent_type"] = "LCL"
+            if item.custom_lcl_type == "Tata Ac":
+                result["container_feet"] = "Tata Ac"                
+            elif item.custom_lcl_type == "Eicher":
+                result["container_feet"] = "Eicher"
+            elif item.custom_lcl_type == "Lorry":
+                result["container_feet"] = "Lorry"
+            elif item.custom_lcl_type == "Trurus1":
+                result["container_feet"] = "Trurus1"
+            elif item.custom_lcl_type == "Trurus2":
+                result["container_feet"] = "Trurus2"
+                
         elif item.custom_rent_type == "Sqft Based":
             result["rent_type"] = "Sqft Based"
             if item.custom_square_feet_size == "1000":
@@ -114,6 +127,7 @@ def get_valid_service_items(doctype, txt, searchfield, start, page_len, filters)
             custom_rent_type = "Container Based"
             OR custom_rent_type = "Sqft Based"
             OR custom_rent_type = "Add on"
+            OR custom_rent_type = "LCL"
         )
         ORDER BY idx DESC
     """, as_list=True)
@@ -187,8 +201,7 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
     item_map = {}
     sqft_by_date = defaultdict(list)
 
-    for container in containers:
-        # frappe.log_error("Container: ", container.name)
+    for container in containers: 
 
        
         total_inward = frappe.db.get_value("Inward Entry Item", container.name, "qty") or 0
@@ -196,15 +209,13 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
             SELECT SUM(oi.qty) FROM `tabOutward Entry Items` oi
             JOIN `tabOutward Entry` o ON o.name = oi.parent
             WHERE o.consignment = %s AND oi.container = %s
-        """, (consignment_id, container.name))[0][0] or 0
-        # frappe.log_error("used_outward: ", used_outward)
+        """, (consignment_id, container.name))[0][0] or 0        
 
         outward_date = frappe.db.sql("""
             SELECT MAX(o.date) FROM `tabOutward Entry` o
             JOIN `tabOutward Entry Items` oi ON oi.parent = o.name
             WHERE o.consignment = %s AND oi.container = %s
-        """, (consignment_id, container.name))[0][0]
-        # frappe.log_error("outward_date: ", outward_date)
+        """, (consignment_id, container.name))[0][0]        
 
         if not outward_date:
             continue
@@ -268,6 +279,21 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
                 rate = traffic.after_875discounted_rate
             else:
                 rate = traffic.rate
+
+            if container.container_size not in ["20", "40"]:
+                    if str(container.container_size) == str(service_item.custom_lcl_type):
+                        key = f"{traffic.service_type}|{arrival_date}|{outward_date}|LCL"
+                        item_map[key] = {
+                            "item_code": traffic.service_type,
+                            "qty": 1,
+                            "uom": "Day",
+                            "rate": rate * duration,
+                            "description": (
+                                f"From {arrival_date.strftime('%d.%m.%y')} to {outward_date.strftime('%d.%m.%y')}<br>"
+                                f"{duration} Days * {rate} = {rate * duration}<br>"
+                                f"(1 * {container.container_size})"
+                            )
+                        }
 
             if service_item.custom_rent_type == "Container Based":
                 if str(container.container_size) == str(service_item.custom_container_feat_size):

@@ -28,8 +28,7 @@ frappe.ui.form.on("Customer Traffic Config", {
                         frappe.model.set_value(cdt, cdn, "container_feet", r.message.container_feet);
                         frappe.model.set_value(cdt, cdn, "minimum_commitmentnoofdays", r.message.min_commitment);
                         frappe.model.set_value(cdt, cdn, "rate", r.message.rate);                        
-                        frm.refresh_field("custom_customer_traffic_config");
-                        hide_min_day(row, frm);                        
+                        frm.refresh_field("custom_customer_traffic_config");                                              
                     }
                 }
             });
