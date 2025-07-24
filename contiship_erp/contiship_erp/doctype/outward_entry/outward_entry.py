@@ -128,7 +128,7 @@ def get_inward_item_details(consignment, container, item_code):
         "qty": remaining_qty,
         "uom": row.uom,       
         "grade_item":row.grade_item,
-        "grade":row.grade
+        "grade":row.grade,        
     }
    
 @frappe.whitelist()
@@ -138,7 +138,8 @@ def get_all_inward_items(consignment):
 
     result = frappe.db.sql("""
         SELECT 
-            iei.name as container,
+            iei.name,
+            iei.container,
             iei.item,
             iei.qty,
             iei.uom,
@@ -166,6 +167,7 @@ def get_all_inward_items(consignment):
 
         if remaining_qty > 0:
             items.append({
+                "name": row.name,
                 "container": row.container,
                 "item": row.item,
                 "qty": remaining_qty,
