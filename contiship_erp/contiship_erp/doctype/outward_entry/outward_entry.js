@@ -57,7 +57,8 @@ frappe.ui.form.on("Outward Entry", {
                     if (r.message && Array.isArray(r.message)) {
                         r.message.forEach(item => {
                             let row = frm.add_child("items", {
-                                container: item.container,
+                                container: item.name,
+                                container_name : item.container,
                                 item: item.item,
                                 stock_qty: item.qty,
                                 uom: item.uom,
@@ -74,9 +75,18 @@ frappe.ui.form.on("Outward Entry", {
 });
 
 frappe.ui.form.on('Outward Entry Items', {
-    consignment(frm, cdt, cdn) {        
-        frappe.model.set_value(cdt, cdn, 'container', null);
+    // consignment(frm, cdt, cdn) {        
+    //     frappe.model.set_value(cdt, cdn, 'container', null);
+    // },
+    container(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];    
+        frappe.model.set_value(cdt, cdn, 'item', null);    
+        frappe.model.with_doc("Inward Entry Item", row.container).then(() => {
+            const doc = frappe.model.get_doc("Inward Entry Item", row.container);
+            frappe.model.set_value(cdt, cdn, 'container_name', doc.container);
+        })
     },
+    
     item(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
         if (!frm.doc.consignment || !row.container || !row.item) return;
@@ -93,7 +103,7 @@ frappe.ui.form.on('Outward Entry Items', {
                     frappe.model.set_value(cdt, cdn, 'stock_qty', r.message.qty);
                     frappe.model.set_value(cdt, cdn, 'uom', r.message.uom);
                     frappe.model.set_value(cdt, cdn, 'grade_item', r.message.grade_item);
-                    frappe.model.set_value(cdt, cdn, 'grade', r.message.grade);
+                    frappe.model.set_value(cdt, cdn, 'grade', r.message.grade);                   
                 }
             }
         });

@@ -58,25 +58,25 @@ frappe.ui.form.on('Inward Entry', {
     // }
 });
 
-frappe.ui.form.on('Inward Entry Item', {
-    qty: function(frm) {
-        update_addon_qty_total(frm);
-    },
-    inward_entry_items_add: function(frm) {
-        update_addon_qty_total(frm);
-    },
-    inward_entry_items_remove: function(frm) {
-        update_addon_qty_total(frm);
-    }
-});
+// frappe.ui.form.on('Inward Entry Item', {
+//     qty: function(frm) {
+//         update_addon_qty_total(frm);
+//     },
+//     inward_entry_items_add: function(frm) {
+//         update_addon_qty_total(frm);
+//     },
+//     inward_entry_items_remove: function(frm) {
+//         update_addon_qty_total(frm);
+//     }
+// });
 
-function update_addon_qty_total(frm) {
-    const line_item_count = frm.doc.inward_entry_items?.length || 0;
+// function update_addon_qty_total(frm) {
+//     const line_item_count = frm.doc.inward_entry_items?.length || 0;
 
-    frm.doc.add_on_services_inward?.forEach(row => {
-        frappe.model.set_value(row.doctype, row.name, 'qty', line_item_count);
-    });
-}
+//     frm.doc.add_on_services_inward?.forEach(row => {
+//         frappe.model.set_value(row.doctype, row.name, 'qty', line_item_count);
+//     });
+// }
 
 
 frappe.ui.form.on('Add On Services', {
@@ -93,7 +93,7 @@ frappe.ui.form.on('Add On Services', {
             callback: function(r) {
                 if (r.message) {
                     frappe.model.set_value(cdt, cdn, 'rate', r.message.price || 0);
-                    update_addon_qty_total(frm)                    
+                    // update_addon_qty_total(frm)                    
                 }
             }
         });
