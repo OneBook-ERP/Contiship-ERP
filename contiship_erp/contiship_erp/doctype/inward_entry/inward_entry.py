@@ -39,7 +39,8 @@ def create_sales_invoice(inward_entry):
             "item_code": row.add_on_item,
             "qty": row.qty or 1,            
             "rate": row.rate,
-            "description": row.description            
+            "description": row.description,
+            "uom": row.uom or "Nos"           
         })
 
     if not sales_invoice.items:
