@@ -117,14 +117,14 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.rent_type !=\"Add On\" && doc.container_feet ==\"40\"",
+   "depends_on": "eval:doc.rent_type !=\"Add On\"",
    "fieldname": "enable_75_rule",
    "fieldtype": "Check",
    "label": "Enable 75% Rule"
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.rent_type !=\"Add On\" && doc.container_feet ==\"40\"",
+   "depends_on": "eval:doc.rent_type !=\"Add On\"",
    "fieldname": "enable_875_rule",
    "fieldtype": "Check",
    "label": "Enable 87.5% Rule"
@@ -149,7 +149,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-23 11:27:38.586741",
+ "modified": "2025-07-25 15:03:13.479468",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Customer Traffic Config",

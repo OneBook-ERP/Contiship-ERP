@@ -514,8 +514,8 @@ def create_sales_invoice(outward_entry):
                 WHERE o.consignment = %s AND oi.container = %s
             """, (consignment.name, container_id))[0][0] or 0
 
-            if total_inward != used_outward:
-                continue
+            if total_inward != used_outward :
+                return
 
             outward_date = frappe.db.sql("""
                 SELECT MAX(o.date) FROM `tabOutward Entry` o
@@ -705,6 +705,7 @@ def create_sales_invoice(outward_entry):
             "custom_reference_doctype": "Inward Entry",
             "custom_reference_docname": consignment.name,
             "custom_invoice_type": "Immediate Billing",
+            "custom_consignment": consignment.boeinvoice_no,
             "items": matching_items
         })
         invoice.insert()
