@@ -285,13 +285,13 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
                         key = f"{traffic.service_type}|{arrival_date}|{outward_date}|LCL"
                         item_map[key] = {
                             "item_code": traffic.service_type,
-                            "qty": 1,
+                            "qty": duration,
                             "uom": "Day",
-                            "rate": rate * duration,
+                            "rate": rate,
                             "description": (
                                 f"From {arrival_date.strftime('%d.%m.%y')} to {outward_date.strftime('%d.%m.%y')}<br>"
-                                f"{duration} Days * {rate} = {rate * duration}<br>"
-                                f"(1 * {container.container_size})"
+                                # f"{duration} Days * {rate} = {rate * duration}<br>"
+                                # f"(1 * {container.container_size})"
                             )
                         }
 
@@ -300,13 +300,13 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
                     key = f"{traffic.service_type}|{arrival_date}|{end_date}|container"
                     item_map[key] = {
                         "item_code": traffic.service_type,
-                        "qty": 1,
+                        "qty": duration,
                         "uom": "Day",
-                        "rate": rate * duration,
+                        "rate": rate,
                         "description": (
                             f"From {arrival_date.strftime('%d.%m.%y')} to {end_date.strftime('%d.%m.%y')}<br>"
-                            f"{duration} Days * {rate} = {rate * duration}<br>"
-                            f"(1*{container.container_size})"
+                            # f"{duration} Days * {rate} = {rate * duration}<br>"
+                            # f"(1*{container.container_size})"
                         )
                     }
             elif service_item.custom_rent_type == "Sqft Based":                
@@ -333,10 +333,10 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
             block_size = int(config.square_feet_size or 0)
             if block_size <= 0: continue
 
-            block_count = remaining_sqft // block_size
-            if block_count == 0: continue
+            # block_count = remaining_sqft // block_size
+            # if block_count == 0: continue
 
-            remaining_sqft -= block_count * block_size
+            remaining_sqft = remaining_sqft - block_size
             duration = max(min_days, config.minimum_commitmentnoofdays or 1)
             if config.enable_75_rule and apply_75_discount:
                 rate = config.after_75_discounted_rate
@@ -347,39 +347,42 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
             key = f"{config.service_type}|{arrival_date}|{end_date}|{block_size}"
             item_map[key] = {
                 "item_code": config.service_type,
-                "qty": block_count,
+                "qty": duration,
                 "uom": "Day",
-                "rate": rate * duration * block_count,
+                "rate": rate,
                 "description": (
                     f"From {arrival_date.strftime('%d.%m.%y')} to {end_date.strftime('%d.%m.%y')}<br>"
-                    f"{duration} Days * {rate} = {rate * duration}<br>"
-                    f"({block_count}*{round(block_size/10)})"
+                    # f"{duration} Days * {rate} = {rate * duration}<br>"
+                    # f"({block_count}*{round(block_size/10)})"
                 )
             }
 
         if remaining_sqft > 0:
-            config_500 = next((cfg for cfg in sqft_configs if cfg.square_feet_size == 500), None)
-            if config_500:
-                duration = max(min_days, config_500.minimum_commitmentnoofdays or 1)
-                if config_500.enable_75_rule and apply_75_discount:
-                    rate_500 = config_500.after_75_discounted_rate
-                elif config_500.enable_875_rule and apply_87_5_discount:
-                    rate_500 = config_500.after_875discounted_rate
-                else:
-                    rate_500 = config_500.rate
+            frappe.log_error("remaining_sqftw2",remaining_sqft)
+            frappe.log_error("traffic_config", traffic_config[0].as_dict())
+            for traffic in traffic_config:
+                frappe.log_error("traffic", traffic.as_dict())
+                if traffic.square_feet_size == "500":
+                    frappe.log_error("hit", traffic.as_dict())
+                    duration = max(min_days, traffic.minimum_commitmentnoofdays)
 
-                key = f"{config_500.service_type}|{arrival_date}|{end_date}|500"
-                item_map[key] = {
-                    "item_code": config_500.service_type,
-                    "qty": 1,
-                    "uom": "Day",
-                    "rate": rate_500 * duration,
-                    "description": (
-                        f"From {arrival_date.strftime('%d.%m.%y')} to {end_date.strftime('%d.%m.%y')}<br>"
-                        f"{duration} Days * {rate_500} = {rate_500 * duration}<br>"
-                        f"(1*{round(remaining_sqft/10)})"
-                    )
-                }
+                    if traffic.enable_75_rule and apply_75_discount:
+                        rate_500 = traffic.after_75_discounted_rate
+                    elif traffic.enable_875_rule and apply_87_5_discount:
+                        rate_500 = traffic.after_875discounted_rate
+                    else:
+                        rate_500 = traffic.rate
+
+                    key = f"{traffic.service_type}|{arrival_date}|{outward_date}|500|Add On Service"
+                    item_map[key] = {
+                        "item_code": traffic.service_type,
+                        "qty": duration,
+                        "uom": "Day",
+                        "rate": rate_500,
+                        "description": f"From {arrival_date.strftime('%d.%m.%y')} to {outward_date.strftime('%d.%m.%y')}"
+                    }
+
+                    frappe.log_error("item_map", item_map)
 
     # frappe.log_error("Item Map: ", item_map)
 
