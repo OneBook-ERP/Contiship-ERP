@@ -393,7 +393,7 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
     invoice = frappe.get_doc({
         "doctype": "Sales Invoice",
         "customer": consignment.customer,
-        "posting_date": getdate(nowdate()),
+        "posting_date": billing_date,
         "custom_reference_doctype": "Inward Entry",
         "custom_reference_docname": consignment.name,
         "custom_invoice_type": "Monthly Billing",
