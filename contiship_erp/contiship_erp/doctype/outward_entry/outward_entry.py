@@ -686,7 +686,7 @@ def create_sales_invoice(outward_entry):
 
             for row in outward_dates:                
                 current_date = getdate(row.date)
-                days_stayed = (current_date - previous_date).days or 1                
+                days_stayed = (current_date - previous_date).days + 1                
                 remaining_qty -= row.qty
                 frappe.log_error("remaining_qty",remaining_qty)
 
@@ -748,7 +748,7 @@ def create_sales_invoice(outward_entry):
 
                     
 
-                previous_date = current_date
+                # previous_date = current_date
 
         for current_date, containers in sqft_by_date.items():
             total_sqft = sum(c["sqft"] for c in containers)

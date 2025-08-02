@@ -252,7 +252,7 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
             arrival_date = getdate(last_invoice[0].posting_date)
 
         end_date = getdate(outward_date) if outward_date else billing_date
-        days_stayed = (end_date - arrival_date).days or 1
+        days_stayed = (end_date - arrival_date).days + 1
 
         outward_dates = frappe.db.sql("""
             SELECT o.date, SUM(oi.qty) AS qty

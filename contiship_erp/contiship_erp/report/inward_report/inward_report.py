@@ -11,6 +11,7 @@ def execute(filters=None):
 def get_columns():
 	return [
 		{"label": "Inward ID", "fieldname": "name", "fieldtype": "Link", "options": "Inward Entry", "width": 150},
+		{"label": "Status", "fieldname": "docstatus", "width": 100},
 		{"label": "Customer", "fieldname": "customer", "fieldtype": "Link", "options": "Customer", "width": 300},
 		{"label": "Item", "fieldname": "item", "fieldtype": "Link", "options": "Item", "width": 150},
 		{"label": "Grade", "fieldname": "grade", "width": 100},
@@ -19,6 +20,7 @@ def get_columns():
 		{"label": "Arrival Date", "fieldname": "arrival_date", "fieldtype": "Date", "width": 110},
 		{"label": "Quantity", "fieldname": "qty", "fieldtype": "Float", "width": 100},
 	]
+
 
 def get_data(filters):
 	conditions = ""
@@ -47,6 +49,11 @@ def get_data(filters):
 	return frappe.db.sql("""
 		SELECT
 			ie.name,
+			CASE 
+				WHEN ie.docstatus = 0 THEN 'Draft'
+				WHEN ie.docstatus = 1 THEN 'Submitted'
+				WHEN ie.docstatus = 2 THEN 'Cancelled'
+			END as docstatus,
 			ie.customer,
 			ied.item,
 			ied.grade,
@@ -59,7 +66,7 @@ def get_data(filters):
 		JOIN
 			`tabInward Entry Item` ied ON ied.parent = ie.name
 		WHERE
-			ie.docstatus = 1 {conditions}
+			1=1 {conditions}
 		ORDER BY
 			ie.arrival_date DESC
 	""".format(conditions=conditions), values, as_dict=1)
