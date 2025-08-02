@@ -39,7 +39,8 @@ frappe.ui.form.on("Outward Entry", {
             return {
                 filters: {
                     customer: frm.doc.customer,
-                    invoice_generated :0
+                    invoice_generated :0,
+                    docstatus : 1
                 }
             };
         });
@@ -71,8 +72,28 @@ frappe.ui.form.on("Outward Entry", {
                 }
             })
         }
+    },
+    customer(frm){
+        if (frm.doc.customer){
+            get_inward_items(frm)
+        }
     }
 });
+
+function get_inward_items(frm){
+    frappe.call({
+        method: "contiship_erp.contiship_erp.doctype.outward_entry.outward_entry.get_inward_html_table",
+        args: {
+            customer: frm.doc.customer
+        },
+        callback: function (r) {
+            if (r.message) {
+                frm.set_df_property('consignment_data', 'options', r.message);
+                frm.refresh_field('consignment_data');
+            }
+        }
+    });
+}
 
 frappe.ui.form.on('Outward Entry Items', {
     // consignment(frm, cdt, cdn) {        
