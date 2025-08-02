@@ -3,6 +3,7 @@
  "allow_rename": 1,
  "autoname": "format:OTW-{MM}-{#####}",
  "creation": "2025-06-06 00:11:43.205912",
+ "default_view": "Report",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -88,11 +89,12 @@
    "read_only": 1
   }
  ],
+ "force_re_route_to_default_view": 1,
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-21 19:18:18.606467",
+ "modified": "2025-08-02 08:58:21.495378",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Outward Entry",

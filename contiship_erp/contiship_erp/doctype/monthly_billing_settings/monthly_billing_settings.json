@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-02 09:49:13.525560",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "column_break_tkum",
+  "create_monthly_billing",
+  "column_break_ziim"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_tkum",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "create_monthly_billing",
+   "fieldtype": "Button",
+   "label": "Create Monthly Billing"
+  },
+  {
+   "fieldname": "column_break_ziim",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-08-02 10:37:33.859434",
+ "modified_by": "Administrator",
+ "module": "ContiShip ERP",
+ "name": "Monthly Billing Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
