@@ -203,7 +203,118 @@ def get_all_inward_items(consignment):
 
     return items
 
-    
+import frappe
+from frappe.utils import formatdate
+
+@frappe.whitelist()
+def get_inward_html_table(customer):
+    entries = frappe.get_all("Inward Entry",
+        filters={"customer": customer, "invoice_generated": 0, "docstatus": 1},
+        fields=["name", "arrival_date", "docstatus", "boeinvoice_no"]
+    )
+
+    if not entries:
+        return "<p>No Inward Entries found for this customer.</p>"
+
+    html = """
+    <style>
+        table.table-bordered {
+            border: 2px solid #000;
+        }
+        table.table-bordered th,
+        table.table-bordered td {
+            border: 2px solid #000;
+        }
+        table.table-sm th,
+        table.table-sm td {
+            border: 2px solid #000 !important;
+        }
+    </style>
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Inward ID</th>
+                    <th>BOE Invoice</th>
+                    <th>Arrival Date</th>
+                    <th>Status</th>
+                    <th>Items</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+
+    for entry in entries:
+        item_rows = ""
+        has_available_item = False
+
+        inward_items = frappe.get_all("Inward Entry Item",
+            filters={"parent": entry.name},
+            fields=["name", "item", "qty", "uom", "grade_item", "grade", "container"]
+        )
+
+        for item in inward_items:
+            used_qty = frappe.db.sql("""
+                SELECT SUM(oi.qty)
+                FROM `tabOutward Entry Items` oi
+                JOIN `tabOutward Entry` o ON o.name = oi.parent
+                WHERE o.consignment = %s
+                AND oi.container = %s
+                AND oi.item = %s
+            """, (entry.name, item.name, item.item))[0][0] or 0
+
+            available_qty = item.qty - used_qty
+
+            if available_qty > 0:
+                has_available_item = True
+                item_rows += f"""
+                    <tr>
+                        <td>{item.container}</td>
+                        <td>{item.item}</td>
+                        <td>{item.grade_item or ""}</td>
+                        <td>{item.grade or ""}</td>
+                        <td>{item.uom or ""}</td>
+                        <td>{available_qty} / {item.qty}</td>
+                    </tr>
+                """
+
+        if has_available_item:
+            html += f"""
+                <tr>
+                    <td>{entry.name}</td>
+                    <td>{entry.boeinvoice_no or ""}</td>
+                    <td>{formatdate(entry.arrival_date)}</td>
+                    <td>{"Submitted" if entry.docstatus == 1 else "Draft"}</td>
+                    <td>
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Container</th>
+                                    <th>Item</th>
+                                    <th>Grade Item</th>
+                                    <th>Grade</th>
+                                    <th>UOM</th>                                    
+                                    <th>Available / Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {item_rows}
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            """
+
+    html += "</tbody></table></div>"
+    return html
+
+
+
+
+
+
+
+
 # @frappe.whitelist()
 # def get_inward_items(consignment, name):
 #     if not consignment or not name:
@@ -736,3 +847,5 @@ def create_sales_invoice(outward_entry):
 
     except Exception:
         frappe.log_error(frappe.get_traceback(), f"Failed to create invoice for outward entry {outward_entry}")
+
+

@@ -17,7 +17,9 @@
   "items",
   "section_break_ttjw",
   "add_on_services_outward",
-  "amended_from"
+  "amended_from",
+  "section_break_prlj",
+  "consignment_data"
  ],
  "fields": [
   {
@@ -87,6 +89,15 @@
    "in_standard_filter": 1,
    "label": "BOE/Invoice No",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_prlj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "consignment_data",
+   "fieldtype": "HTML",
+   "label": "Consignment Data"
   }
  ],
  "force_re_route_to_default_view": 1,
@@ -94,7 +105,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-08-02 08:58:21.495378",
+ "modified": "2025-08-02 10:48:56.590929",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Outward Entry",
