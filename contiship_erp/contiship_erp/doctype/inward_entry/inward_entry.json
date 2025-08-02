@@ -4,6 +4,7 @@
  "allow_rename": 1,
  "autoname": "format:INW-{MM}-{#####}",
  "creation": "2025-06-06 00:04:38.036024",
+ "default_view": "Report",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -62,7 +63,6 @@
    "fieldname": "cha_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "CHA Name"
   },
   {
@@ -79,6 +79,7 @@
    "fieldname": "customer",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Customer",
    "options": "Customer",
    "reqd": 1
@@ -128,6 +129,7 @@
    "label": "Monthly Invoice Generated"
   }
  ],
+ "force_re_route_to_default_view": 1,
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
@@ -141,7 +143,7 @@
    "link_fieldname": "consignment"
   }
  ],
- "modified": "2025-07-21 14:44:36.208824",
+ "modified": "2025-08-02 08:57:30.705362",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
