@@ -93,7 +93,7 @@ def get_data(filters):
 		JOIN
 			`tabInward Entry Item` AS ied ON ied.parent = ie.name
 		WHERE
-			ie.docstatus = 1 {conditions}
+			1=1 {conditions}
 		GROUP BY
 			ie.name, ied.item
 		ORDER BY

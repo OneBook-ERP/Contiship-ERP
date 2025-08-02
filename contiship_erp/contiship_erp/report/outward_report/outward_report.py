@@ -12,14 +12,18 @@ def execute(filters=None):
 def get_columns():
 	return [
 		{"label": "Outward ID", "fieldname": "name", "fieldtype": "Link", "options": "Outward Entry", "width": 150},
+		{"label": "Status", "fieldname": "docstatus", "width": 100},
 		{"label": "Customer", "fieldname": "customer", "fieldtype": "Link", "options": "Customer", "width": 300},
 		{"label": "Inward ID", "fieldname": "consignment", "fieldtype": "Link", "options": "Inward Entry", "width": 150},
 		{"label": "Consignment", "fieldname": "boeinvoice_no", "fieldtype": "Link", "options": "Inward Entry", "width": 200},
 		{"label": "Item", "fieldname": "item", "fieldtype": "Link", "options": "Item", "width": 120},
 		{"label": "Grade", "fieldname": "grade", "width": 100},
-		{"label": "Qty", "fieldname": "qty", "fieldtype": "Float", "width": 100},
+		{"label": "Total Outward Qty", "fieldname": "qty", "fieldtype": "Float", "width": 100},
+		{"label": "Total Inward Qty", "fieldname": "inward_qty", "fieldtype": "Float", "width": 120},
 		{"label": "Date", "fieldname": "date", "fieldtype": "Date", "width": 100}
 	]
+
+
 
 def get_data(filters):
 	conditions = ""
@@ -47,19 +51,32 @@ def get_data(filters):
 	return frappe.db.sql("""
 		SELECT
 			oe.name,
+			CASE 
+				WHEN oe.docstatus = 0 THEN 'Draft'
+				WHEN oe.docstatus = 1 THEN 'Submitted'
+				WHEN oe.docstatus = 2 THEN 'Cancelled'
+			END AS docstatus,
 			oe.customer,
 			oe.boeinvoice_no,
 			oe.consignment,
 			oed.item,
 			oed.grade,
 			oed.qty,
+			(
+				SELECT SUM(ied.qty)
+				FROM `tabInward Entry Item` ied
+				JOIN `tabInward Entry` ie ON ie.name = ied.parent
+				WHERE
+					ie.name = oe.consignment
+					AND ied.item = oed.item
+			) AS inward_qty,
 			oe.date
 		FROM
 			`tabOutward Entry` oe
 		JOIN
 			`tabOutward Entry Items` oed ON oed.parent = oe.name
 		WHERE
-			oe.docstatus = 1 {conditions}
+			1=1 {conditions}
 		ORDER BY
 			oe.date DESC
 	""".format(conditions=conditions), values, as_dict=1)

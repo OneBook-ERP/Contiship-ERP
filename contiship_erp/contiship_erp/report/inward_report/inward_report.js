@@ -45,6 +45,24 @@ frappe.query_reports["Inward Report"] = {
 			default: frappe.datetime.get_today(),
 			reqd: 1
 		}
-	]
+	],
+	formatter: function(value, row, column, data, default_formatter) {
+		value = default_formatter(value, row, column, data);
+	
+		if (column.fieldname === "docstatus") {
+			if (value === "Submitted") {
+				return `<span style="background-color: #cce5ff; color: #004085; font-weight: bold; padding: 2px 6px; border-radius: 4px;">${value}</span>`;
+			}
+			if (value === "Draft") {
+				return `<span style="background-color: #ffcccc; color: #721c24; font-weight: bold; padding: 2px 6px; border-radius: 4px;">${value}</span>`;
+			}
+			if (value === "Cancelled") {
+				return `<span style="background-color: #f8d7da; color: #721c24; font-weight: bold; padding: 2px 6px; border-radius: 4px;">${value}</span>`;
+			}
+		}
+	
+		return value;
+	}
+	
 };
 
