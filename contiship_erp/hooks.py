@@ -157,8 +157,14 @@ doc_events = {
 
 scheduler_events = {
     "daily": [
-        "contiship_erp.custom.traffic_custom.create_monthly_sales_invoice"
-    ]
+        "contiship_erp.custom.traffic_custom.create_monthly_sales_invoice",
+        "contiship_erp.custom.traffic_custom.create_monthly_additional_sqft_invoice"
+    ],
+    "cron": {
+        "0 1 1 * *": [
+            "contiship_erp.custom.traffic_custom.create_monthly_standard_sqft_invoice"
+        ]
+    }
 }
 
 # Scheduled Tasks

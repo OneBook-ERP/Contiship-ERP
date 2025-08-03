@@ -8,6 +8,7 @@
  "field_order": [
   "service_type",
   "rent_type",
+  "uom",
   "column_break_vhnc",
   "minimum_commitmentnoofdays",
   "enable_75_rule",
@@ -20,7 +21,7 @@
   "add_on_type",
   "container_feet",
   "square_feet_size",
-  "ton_size",
+  "additional_sqft_size",
   "lcl_type",
   "column_break_yito",
   "add_on_service"
@@ -102,13 +103,6 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.square_feet_size==\"TON\"",
-   "fieldname": "ton_size",
-   "fieldtype": "Int",
-   "label": "TON Size",
-   "read_only": 1
-  },
-  {
    "fieldname": "rent_type",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -143,13 +137,26 @@
    "fieldtype": "Data",
    "label": "LCL Type",
    "read_only": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM"
+  },
+  {
+   "depends_on": "eval:doc.square_feet_size==\"Additional\"",
+   "fieldname": "additional_sqft_size",
+   "fieldtype": "Int",
+   "label": "Additional Sqft Size",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-25 15:03:13.479468",
+ "modified": "2025-08-02 19:07:24.906542",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Customer Traffic Config",
