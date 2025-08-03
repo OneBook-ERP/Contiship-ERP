@@ -1,5 +1,8 @@
 import frappe
-from frappe.utils import nowdate
+import calendar
+from datetime import datetime
+from frappe.utils import nowdate, getdate
+from collections import defaultdict
 
 @frappe.whitelist()
 def fetch_item_data(service_type):
@@ -10,11 +13,12 @@ def fetch_item_data(service_type):
             "container_feet": None,
             "min_commitment": None,
             "square_feet_size":None,
-            "ton_size":None,            
+            "additional_sqft_size":None,            
             "sqft_value": None,            
             "add_on_type":None,
             "add_on_service":None,
-            "rate": None
+            "rate": None,
+            "uom": None
         }
         item_price = frappe.db.sql("""
                 SELECT price_list_rate
@@ -56,10 +60,10 @@ def fetch_item_data(service_type):
             elif item.custom_square_feet_size == "500":
                 result["square_feet_size"] = "500"
                 result["min_commitment"] = item.custom_sqft_min_commitment
-            elif item.custom_square_feet_size == "TON":
-                result["square_feet_size"] = "TON"
+            elif item.custom_square_feet_size == "Additional":
+                result["square_feet_size"] = "Additional"
                 result["min_commitment"] = item.custom_sqft_min_commitment
-                result["ton_size"]= item.custom_ton_size
+                result["additional_sqft_size"]= item.custom_additional_sqft_size
         elif item.custom_rent_type == "Add On":
             result["rent_type"] = "Add On"
             if item.custom_add_on_type == "Loading":
@@ -71,52 +75,12 @@ def fetch_item_data(service_type):
             elif item.custom_add_on_type == "Crossing":
                 result["add_on_type"] = "Crossing"
                 result["add_on_service"] = item.custom_add_on_service
-            
-        # elif item.custom_container_based_rent == 1:
-        #     result["container_feet"] = item.custom_container_feat_size
-        #     result["min_commitment"] = item.custom_container_min_commitment
-
-
-        # elif item.custom_sqft_based_rent == 1:
-        #     result["sqft_type"] = item.custom_sqft_type
-            
-        #     if item.custom_sqft_type == "Ton Based":
-        #         if item.custom_80_ton == 1:
-        #             result["sqft_value"] = "80 Ton"
-        #             result["ton_sqft"] = item.custom_ton_based_sqft
-        #             result["min_commitment"] = item.custom_sqft_min_commitment
-        #         elif item.custom_40_ton == 1:
-        #             result["sqft_value"] = "40 Ton"
-        #             result["ton_sqft"] = item.custom_ton_based_sqft
-        #             result["min_commitment"] = item.custom_sqft_min_commitment
-                
-        #     elif item.custom_sqft_type == "Container Based" :
-        #         result["sqft_value"] = "Container"
-        #         result["container_sqft"] = item.custom_container_based_sqft
-        #         result["min_commitment"] = item.custom_sqft_min_commitment
-                
+                            
         return result
         
     except Exception as e:
         frappe.log_error(f"Error fetching item data: {str(e)}")
         frappe.throw(f"Error fetching item data: {str(e)}")
-
-
-# @frappe.whitelist()
-# def get_valid_service_items(doctype, txt, searchfield, start, page_len, filters):
-
-#     return frappe.db.sql("""
-#         SELECT name, item_name
-#         FROM `tabItem`
-#         WHERE disabled = 0 AND (
-#             custom_rent_type = "Container Based"
-#             OR custom_rent_type = "Sqft Based"
-#             OR custom_rent_type = "Add on"
-#         ) AND ({0} LIKE %s OR item_name LIKE %s)
-#         ORDER BY idx DESC
-#         LIMIT %s OFFSET %s
-#     """.format(searchfield), ('%%%s%%' % txt, '%%%s%%' % txt, page_len, start))
-
 
 @frappe.whitelist()
 def get_valid_service_items(doctype, txt, searchfield, start, page_len, filters):
@@ -146,6 +110,135 @@ def sales_invoice_on_submit(doc, method):
         frappe.db.commit()
         frappe.log_error("Renamed Invoice", f"{doc.name} ➜ {new_name}")
 
+
+
+# ----------------------------INVOICE CREATION----------------------------
+
+@frappe.whitelist()
+def create_monthly_standard_sqft_invoice(start=None):
+    if start == 1:
+        today_obj = getdate(nowdate())
+        year = today_obj.year
+        month = today_obj.month
+        today = datetime(year, month, 1).date()
+    else:
+        today = getdate(nowdate())
+    year = today.year
+    month = today.month
+    days_in_month = calendar.monthrange(year, month)[1]
+
+    start_date = getdate(f"{year}-{month:02d}-01")
+    end_date = getdate(f"{year}-{month:02d}-{days_in_month}")
+
+    sqft_traffic = frappe.db.get_all(
+        "Customer Traffic Config",
+        filters={
+            "rent_type": "Sqft Based",
+            "square_feet_size": ("!=", "Additional")
+        },
+        fields=["parent as customer", "service_type", "square_feet_size", "minimum_commitmentnoofdays", "rate", "uom"]
+    )
+
+    if not sqft_traffic:
+        frappe.log_error("No Sqft Based traffic records found.", "Monthly Invoice")
+        return
+
+    customer_services = defaultdict(list)
+    for row in sqft_traffic:
+        customer_services[row.customer].append(row)
+
+    for customer, services in customer_services.items():       
+        invoice_date = frappe.db.get_value("Customer", customer, "custom_standard_sqft_invoice_date")
+        if invoice_date:
+            invoice_date = getdate(invoice_date)
+            if invoice_date.year == year and invoice_date.month == month:
+                continue
+
+        invoice = frappe.new_doc("Sales Invoice")
+        invoice.customer = customer
+        invoice.posting_date = today
+        invoice.due_date = today
+
+        for service in services:
+            uom = service.uom or "Sqf"
+            invoice.append("items", {
+                "item_code": service.service_type,
+                "item_name": service.service_type,
+                "description": f"{start_date.strftime('%d-%m-%Y')} to {end_date.strftime('%d-%m-%Y')}",
+                "qty": service.square_feet_size,
+                "rate": service.rate,
+                "uom": uom
+            })
+
+        try:
+            invoice.insert(ignore_permissions=True)         
+            frappe.db.set_value("Customer", customer, "custom_standard_sqft_invoice_date", today)           
+
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"Failed to create invoice for {customer}")
+    return "Invoice Created"
+
+
+@frappe.whitelist()
+def create_monthly_additional_sqft_invoice(end=None):
+    today = getdate(nowdate())
+    year = today.year
+    month = today.month
+    days_in_month = calendar.monthrange(year, month)[1]
+    
+    if today != getdate(f"{year}-{month:02d}-{days_in_month - 1}") and not end:
+        return "Not scheduled date"
+
+    start_date = getdate(f"{year}-{month:02d}-01")
+    end_date = getdate(f"{year}-{month:02d}-{days_in_month}")
+
+    sqft_traffic = frappe.db.get_all(
+        "Customer Traffic Config",
+        filters={
+            "rent_type": "Sqft Based",
+            "square_feet_size": "Additional"
+        },
+        fields=["parent as customer", "service_type", "square_feet_size","additional_sqft_size", "minimum_commitmentnoofdays", "rate", "uom"]
+    )
+
+    if not sqft_traffic:
+        frappe.log_error("No Additional Sqft Based traffic found", "Additional Invoice")
+        return
+
+    customer_services = defaultdict(list)
+    for row in sqft_traffic:
+        customer_services[row.customer].append(row)
+
+    for customer, services in customer_services.items():
+        invoice_date = frappe.db.get_value("Customer", customer, "custom_additional_sqft_invoice_date")
+        if invoice_date:
+            invoice_date = getdate(invoice_date)
+            if invoice_date.year == year and invoice_date.month == month:
+                continue
+
+        invoice = frappe.new_doc("Sales Invoice")
+        invoice.customer = customer
+        invoice.posting_date = today
+        invoice.due_date = today
+
+        for service in services:
+            uom = service.uom or "Sqf"
+            invoice.append("items", {
+                "item_code": service.service_type,
+                "item_name": service.service_type,
+                "description": f"{start_date.strftime('%d-%m-%Y')} to {end_date.strftime('%d-%m-%Y')}",
+                "qty": service.additional_sqft_size or "500",
+                "rate": service.rate,
+                "uom": uom
+            })
+
+        try:
+            invoice.insert(ignore_permissions=True)
+            frappe.db.set_value("Customer", customer, "custom_additional_sqft_invoice_date", today)
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"Failed to create additional sqft invoice for {customer}")
+
+    return "Additional Sqft Invoices Created"
 
 
 

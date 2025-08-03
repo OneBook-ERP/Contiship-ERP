@@ -7,7 +7,10 @@
  "field_order": [
   "column_break_tkum",
   "create_monthly_billing",
-  "column_break_ziim"
+  "column_break_ziim",
+  "standard_sqft_billing",
+  "column_break_uwrn",
+  "additional_sqft_billing"
  ],
  "fields": [
   {
@@ -22,13 +25,27 @@
   {
    "fieldname": "column_break_ziim",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "standard_sqft_billing",
+   "fieldtype": "Button",
+   "label": "Standard Sqft Billing"
+  },
+  {
+   "fieldname": "additional_sqft_billing",
+   "fieldtype": "Button",
+   "label": "Additional Sqft Billing"
+  },
+  {
+   "fieldname": "column_break_uwrn",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-02 10:37:33.859434",
+ "modified": "2025-08-02 20:41:39.881397",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Monthly Billing Settings",
