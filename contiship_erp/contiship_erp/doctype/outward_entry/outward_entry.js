@@ -64,7 +64,8 @@ frappe.ui.form.on("Outward Entry", {
                                 stock_qty: item.qty,
                                 uom: item.uom,
                                 grade_item: item.grade_item,
-                                grade: item.grade
+                                grade: item.grade,
+                                crossing_item: item.crossing_item
                             });
                         });
                         frm.refresh_field("items");
@@ -124,7 +125,8 @@ frappe.ui.form.on('Outward Entry Items', {
                     frappe.model.set_value(cdt, cdn, 'stock_qty', r.message.qty);
                     frappe.model.set_value(cdt, cdn, 'uom', r.message.uom);
                     frappe.model.set_value(cdt, cdn, 'grade_item', r.message.grade_item);
-                    frappe.model.set_value(cdt, cdn, 'grade', r.message.grade);                   
+                    frappe.model.set_value(cdt, cdn, 'grade', r.message.grade); 
+                    frappe.model.set_value(cdt, cdn, 'crossing_item', r.message.crossing_item);                  
                 }
             }
         });

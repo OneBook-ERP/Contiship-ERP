@@ -4,9 +4,9 @@
 frappe.ui.form.on("Monthly Billing Settings", {
 	create_monthly_billing(frm) {
         frappe.call({
-            method: "contiship_erp.custom.traffic_custom.create_monthly_sales_invoice",
+            method: "contiship_erp.custom.traffic_custom.generate_monthly_container_invoices",
             args: {                
-                "monthly_invoice_generated": 1
+                "now": 1
             },
             freeze: true,
             freeze_message: "Creating Monthly Billing...",

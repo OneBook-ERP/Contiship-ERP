@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "customer",
+  "billed",
   "column_break_lxyx",
   "consignment",
   "boeinvoice_no",
@@ -98,6 +99,15 @@
    "fieldname": "consignment_data",
    "fieldtype": "HTML",
    "label": "Consignment Data"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "billed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Billed",
+   "read_only": 1
   }
  ],
  "force_re_route_to_default_view": 1,
@@ -105,7 +115,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-08-02 10:48:56.590929",
+ "modified": "2025-08-07 21:51:04.542324",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Outward Entry",

@@ -3,7 +3,6 @@
 
 import frappe
 
-
 def execute(filters=None):
 	columns = get_columns()
 	data = get_data(filters)
@@ -18,12 +17,12 @@ def get_columns():
 		{"label": "Consignment", "fieldname": "boeinvoice_no", "fieldtype": "Link", "options": "Inward Entry", "width": 200},
 		{"label": "Item", "fieldname": "item", "fieldtype": "Link", "options": "Item", "width": 120},
 		{"label": "Grade", "fieldname": "grade", "width": 100},
-		{"label": "Total Outward Qty", "fieldname": "qty", "fieldtype": "Float", "width": 100},
-		{"label": "Total Inward Qty", "fieldname": "inward_qty", "fieldtype": "Float", "width": 120},
+		{"label": "Crossing Item", "fieldname": "crossing_item", "width": 100},
+		{"label": "Total Inward Qty", "fieldname": "inward_qty", "fieldtype": "Int", "width": 120},
+		{"label": "Available Qty", "fieldname": "available_qty", "fieldtype": "Int", "width": 120},
+		{"label": "Total Outward Qty", "fieldname": "qty", "fieldtype": "Int", "width": 100},
 		{"label": "Date", "fieldname": "date", "fieldtype": "Date", "width": 100}
 	]
-
-
 
 def get_data(filters):
 	conditions = ""
@@ -56,20 +55,43 @@ def get_data(filters):
 				WHEN oe.docstatus = 1 THEN 'Submitted'
 				WHEN oe.docstatus = 2 THEN 'Cancelled'
 			END AS docstatus,
+			CASE 
+				WHEN oed.crossing_item IS NOT NULL AND oed.crossing_item != '' THEN 'Yes'
+				ELSE 'No'
+			END as crossing_item,
 			oe.customer,
 			oe.boeinvoice_no,
 			oe.consignment,
 			oed.item,
 			oed.grade,
-			oed.qty,
-			(
+			CAST(oed.qty AS UNSIGNED) AS qty,
+			CAST((
 				SELECT SUM(ied.qty)
 				FROM `tabInward Entry Item` ied
 				JOIN `tabInward Entry` ie ON ie.name = ied.parent
 				WHERE
 					ie.name = oe.consignment
 					AND ied.item = oed.item
-			) AS inward_qty,
+			) AS UNSIGNED) AS inward_qty,
+			CAST((
+				COALESCE((
+					SELECT SUM(ied.qty)
+					FROM `tabInward Entry Item` ied
+					JOIN `tabInward Entry` ie ON ie.name = ied.parent
+					WHERE
+						ie.name = oe.consignment
+						AND ied.item = oed.item
+				), 0) -
+				COALESCE((
+					SELECT SUM(oed2.qty)
+					FROM `tabOutward Entry Items` oed2
+					JOIN `tabOutward Entry` oe2 ON oe2.name = oed2.parent
+					WHERE
+						oe2.boeinvoice_no = oe.boeinvoice_no
+						AND oed2.item = oed.item
+						AND oe2.docstatus = 1
+				), 0)
+			) AS UNSIGNED) AS available_qty,
 			oe.date
 		FROM
 			`tabOutward Entry` oe

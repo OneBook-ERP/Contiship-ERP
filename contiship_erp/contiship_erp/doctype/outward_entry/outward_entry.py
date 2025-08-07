@@ -123,7 +123,7 @@ def get_inward_item_details(consignment, container, item_code):
 
     result = frappe.db.sql("""
         SELECT 
-            iei.item, iei.qty, iei.uom, iei.grade_item, iei.grade,
+            iei.item, iei.qty, iei.uom, iei.grade_item, iei.grade, iei.crossing_item,
             (
                 SELECT SUM(oi.qty)
                 FROM `tabOutward Entry Items` oi
@@ -176,6 +176,7 @@ def get_all_inward_items(consignment):
             iei.uom,
             iei.grade_item,
             iei.grade,
+            iei.crossing_item,
             (
                 SELECT SUM(oi.qty)
                 FROM `tabOutward Entry Items` oi
@@ -204,7 +205,8 @@ def get_all_inward_items(consignment):
                 "qty": remaining_qty,
                 "uom": row.uom,
                 "grade_item": row.grade_item,
-                "grade": row.grade
+                "grade": row.grade,
+                "crossing_item": row.crossing_item
             })
 
     return items
@@ -316,13 +318,15 @@ def get_inward_html_table(customer):
 
 from frappe.utils import getdate, add_days
 import frappe
-from datetime import timedelta  # Make sure this is imported
+from datetime import timedelta
 
 @frappe.whitelist()
 def create_container_sales_invoice(outward_entry):
     try:
         outward = frappe.get_doc("Outward Entry", outward_entry)
         inward = frappe.get_doc("Inward Entry", outward.consignment)
+        if inward.service_type == "Sqft Based":
+            return
 
         customer = frappe.get_doc("Customer", outward.customer)
         tariffs = inward.customer_tariff_config or customer.custom_customer_traffic_config
@@ -331,6 +335,8 @@ def create_container_sales_invoice(outward_entry):
             frappe.throw("No tariff configuration found.")
 
         for item in inward.inward_entry_items:
+            if item.crossing_item:
+                continue
             container = item.name
             inward_qty = item.qty
 
@@ -338,7 +344,8 @@ def create_container_sales_invoice(outward_entry):
                 filters={
                     "container": container,
                     "parenttype": "Outward Entry",
-                    "docstatus": 1
+                    "docstatus": 1,
+                    "crossing_item": 0,                    
                 },
                 fields=["qty"]
             )
@@ -361,7 +368,14 @@ def create_container_sales_invoice(outward_entry):
             container = item.name
             container_size = item.container_size
             inward_qty = item.qty
-            arrival_date = getdate(item.container_arrival_date)
+            month_invoice_details = get_monthly_invoice(container)
+            if month_invoice_details:
+                if month_invoice_details["custom_container_status"] == "Completed":
+                    continue
+                if month_invoice_details["custom_bill_to_date"]:
+                    arrival_date = getdate(month_invoice_details["custom_bill_to_date"]) + timedelta(days=1)
+                else:
+                    arrival_date = getdate(item.container_arrival_date)
 
             tariff = next((
                 t for t in tariffs 
@@ -375,16 +389,22 @@ def create_container_sales_invoice(outward_entry):
                 frappe.log_error(f"No matching tariff for {container_size}ft", f"Tariff Error for {container}")
                 continue
 
-            outward_items = frappe.get_all("Outward Entry Items",
+            items = frappe.get_all("Outward Entry Items",
                 filters={
                     "container": container,
-                    "parenttype": "Outward Entry"                
+                    "parenttype": "Outward Entry",
+                    "crossing_item": 0,                                 
                 },
                 fields=["qty", "parent"]
             )
-            for item in outward_items:
-                item["date"] = frappe.db.get_value("Outward Entry", item["parent"], "date")
+            outward_items = []
 
+            for item in items:
+                billed = frappe.db.get_value("Outward Entry", item["parent"], "billed")
+                if not billed:
+                    item["date"] = frappe.db.get_value("Outward Entry", item["parent"], "date")
+                    outward_items.append(item)
+           
             if not outward_items:
                 continue
 
@@ -394,67 +414,115 @@ def create_container_sales_invoice(outward_entry):
             default_company = frappe.defaults.get_user_default("Company")
             income_account = frappe.get_value("Company", default_company, "default_income_account")
 
-            dispatched_total = 0        
-            
-            # last_date = arrival_date
+            if tariff.enable_875_rule or tariff.enable_75_rule:                           
+                outward_items = sorted(outward_items, key=lambda x: getdate(x["date"]))
 
-            for row in outward_items:
-                if not tariff.enable_875_rule and not tariff.enable_75_rule:                    
-                    continue
-                frappe.log_error("row", row)
-                current_date = getdate(row["date"])
-                dispatched_before_current = dispatched_total
-                dispatched_total += row["qty"]
-                dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0
+                dispatched_total = 0
+                if month_invoice_details:
+                    dispatched_total = get_billed_qty(container)
+                
+                current_start_date = arrival_date
+                slabs = []
 
-                if tariff.enable_875_rule and dispatched_percent >= 87.5:
-                    rate = tariff.after_875discounted_rate                    
-                elif tariff.enable_75_rule and dispatched_percent >= 75:
-                    rate = tariff.after_75_discounted_rate                    
+                final_outward_date = max(getdate(r["date"]) for r in outward_items)
+                duration_days = (final_outward_date - arrival_date).days + 1
+                commitment_days = tariff.minimum_commitmentnoofdays if not month_invoice_details else 0
+                effective_days = max(duration_days, commitment_days)                                
+                if not month_invoice_details and tariff.minimum_commitmentnoofdays:
+                    final_invoice_date = max(final_outward_date, arrival_date + timedelta(days=tariff.minimum_commitmentnoofdays - 1))
                 else:
-                    rate = tariff.rate
+                    final_invoice_date = final_outward_date
 
-                # duration = (current_date - arrival_date).days or tariff.minimum_commitmentnoofdays
-                # if duration < tariff.minimum_commitmentnoofdays:
-                #     current_date = add_days(arrival_date, tariff.minimum_commitmentnoofdays)
-                #     duration = tariff.minimum_commitmentnoofdays
+                for idx, row in enumerate(outward_items):
+                    current_date = getdate(row["date"])
+                   
+                    dispatched_before_current = dispatched_total   
+                    dispatched_total += row["qty"]
+                    dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0
 
-                if (current_date - arrival_date).days < tariff.minimum_commitmentnoofdays:
-                    display_last_outward_date = arrival_date + timedelta(days=tariff.minimum_commitmentnoofdays - 1)
-                else:
-                    display_last_outward_date = current_date
+                    
+                    if tariff.enable_875_rule and dispatched_percent >= 87.5 :
+                        rate = tariff.after_875discounted_rate
+                        slab_type = "87.5"
+                    elif tariff.enable_75_rule and dispatched_percent >= 75:
+                        rate = tariff.after_75_discounted_rate
+                        slab_type = "75"
+                    else:
+                        rate = tariff.rate
+                        slab_type = "normal"
+                    
+                    if idx + 1 < len(outward_items):
+                        next_date = getdate(outward_items[idx + 1]["date"]) - timedelta(days=1)
+                    else:
+                        next_date = final_invoice_date
+                    
+                    if next_date < current_start_date:
+                        continue
 
-                duration_days = (current_date - arrival_date).days + 1
-                effective_days = max(duration_days, tariff.minimum_commitmentnoofdays)
+                    slabs.append({
+                        "from_date": current_start_date,
+                        "to_date": next_date,
+                        "rate": rate,
+                        "slab_type": slab_type
+                    })
 
-                description = f"From {arrival_date.strftime('%d-%m-%Y')} to {display_last_outward_date.strftime('%d-%m-%Y')}"          
+                    current_start_date = next_date + timedelta(days=1)
+               
                 item_name = frappe.get_value("Item", tariff.service_type, "item_name")
 
-                invoice_items.append({
-                    "item_code": tariff.service_type,
-                    "item_name": item_name,
-                    "rate": rate,
-                    "qty": effective_days,
-                    "uom": tariff.uom or "Day",
-                    "description": description,
-                    "income_account": income_account
-                })
-                # last_date = current_date
+                merged_slabs = []
+                for slab in slabs:
+                    if not merged_slabs:
+                        merged_slabs.append(slab)
+                    else:
+                        last = merged_slabs[-1]
+                        # Merge if rate and slab_type match and dates are contiguous
+                        if slab["rate"] == last["rate"] and slab["slab_type"] == last["slab_type"] and slab["from_date"] == last["to_date"] + timedelta(days=1):
+                            # Extend last slab's to_date
+                            last["to_date"] = slab["to_date"]
+                        else:
+                            merged_slabs.append(slab)
+
+                for slab in merged_slabs:
+                    slab_days = (slab["to_date"] - slab["from_date"]).days + 1
+                    invoice_items.append({
+                        "item_code": tariff.service_type,
+                        "item_name": item_name,
+                        "rate": slab["rate"],
+                        "qty": slab_days,
+                        "uom": tariff.uom or "Day",
+                        "description": f"From {slab['from_date'].strftime('%d-%m-%Y')} to {slab['to_date'].strftime('%d-%m-%Y')}",
+                        "income_account": income_account,
+                        "custom_bill_from_date": slab["from_date"],
+                        "custom_bill_to_date": slab["to_date"],
+                        "custom_container": container,
+                        "custom_container_status": "Completed",
+                        "custom_invoice_type": "Immediate Billing",
+                    })
+
+
             
             if not tariff.enable_875_rule and not tariff.enable_75_rule:
                 frappe.log_error("discount not triggered")
                 final_outward_date = max(getdate(r["date"]) for r in outward_items)
                 actual_last_outward_date = final_outward_date
                 
-                if (final_outward_date - arrival_date).days < tariff.minimum_commitmentnoofdays:
-                    display_last_outward_date = arrival_date + timedelta(days=tariff.minimum_commitmentnoofdays - 1)
-                else:
-                    display_last_outward_date = final_outward_date
+                # if (final_outward_date - arrival_date).days < tariff.minimum_commitmentnoofdays:
+                #     display_last_outward_date = arrival_date + timedelta(days=tariff.minimum_commitmentnoofdays - 1)
+                # else:
+                #     display_last_outward_date = final_outward_date
 
                 duration_days = (actual_last_outward_date - arrival_date).days + 1
-                effective_days = max(duration_days, tariff.minimum_commitmentnoofdays)
+                commitment_days = tariff.minimum_commitmentnoofdays if not month_invoice_details else 0
+                effective_days = max(duration_days, commitment_days)    
+                # effective_days = max(duration_days, tariff.minimum_commitmentnoofdays)
 
-                description = f"From {arrival_date.strftime('%d-%m-%Y')} to {display_last_outward_date.strftime('%d-%m-%Y')}"
+                if not month_invoice_details and tariff.minimum_commitmentnoofdays:
+                    final_invoice_date = max(actual_last_outward_date, arrival_date + timedelta(days=tariff.minimum_commitmentnoofdays - 1))
+                else:
+                    final_invoice_date = actual_last_outward_date
+
+                description = f"From {arrival_date.strftime('%d-%m-%Y')} to {final_invoice_date.strftime('%d-%m-%Y')}"
                 item_name = frappe.get_value("Item", tariff.service_type, "item_name")
 
                 invoice_items.append({
@@ -464,7 +532,13 @@ def create_container_sales_invoice(outward_entry):
                     "qty": effective_days,
                     "uom": tariff.uom or "Day",
                     "description": description,
-                    "income_account": income_account
+                    "income_account": income_account,
+                    "custom_bill_from_date": arrival_date,
+                    "custom_bill_to_date": final_invoice_date,
+                    "custom_container": container,
+                    "custom_container_status": "Completed",
+                    "custom_invoice_type": "Immediate Billing",
+                    
                 })
 
         frappe.log_error("invoice_items", invoice_items)
@@ -492,553 +566,310 @@ def create_container_sales_invoice(outward_entry):
         frappe.throw("An error occurred while generating the container invoice.")
 
 
+def get_monthly_invoice(container):
+    try:
+        frappe.log_error("row", container)
+
+        invoice_items = frappe.get_all(
+            "Sales Invoice Item",
+            filters={
+                "custom_container": container,
+                "parenttype": "Sales Invoice",
+                "custom_invoice_type": "Monthly Billing"
+            },
+            fields=["name", "creation", "custom_bill_from_date", "custom_bill_to_date","custom_container_status"],
+            order_by="creation desc",
+            limit=1
+        )
+
+        if invoice_items:
+            return invoice_items[0]
+        else:
+            return None
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "get_monthly_invoice error")
+        return None
+
 
     
+def get_billed_qty(container):
+    try:
+        items = frappe.get_all(
+            "Outward Entry Items",
+            filters={
+                "container": container,
+                "parenttype": "Outward Entry",
+                "crossing_item": 0,
+            },
+            fields=["qty", "parent"]
+        )
+
+        total_qty = 0
+
+        for item in items:
+            billed = frappe.db.get_value("Outward Entry", item["parent"], "billed")
+            if billed:
+                total_qty += item["qty"] or 0
+
+        return total_qty
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "get_billed_qty error")
+        return 0
 
     
-
-
-
-# @frappe.whitelist()
-# def get_inward_items(consignment, name):
-#     if not consignment or not name:
-#         return
-
-#     entries = frappe.get_all(
-#         "Inward Entry",
-#         filters={"consignment": consignment, "container": name},
-#         fields=["name"]
-#     )
-#     if not entries:
-#         return
-
-#     inward_doc = frappe.get_doc("Inward Entry", entries[0].name)
-#     arrival_date = frappe.db.get_value("Container Entry", name, "container_arrival_date")
-#     remaining_items = []
-
-#     for item in inward_doc.inward_entry_items:
-        
-#         used_outward_qty_result = frappe.db.sql("""
-#             SELECT SUM(oi.qty)
-#             FROM `tabOutward Entry Items` oi
-#             JOIN `tabOutward Entry` o ON o.name = oi.parent
-#             WHERE o.consignment = %s
-#               AND o.container = %s
-#               AND oi.item = %s             
-#         """, (consignment, name, item.item))
-
-#         used_qty = used_outward_qty_result[0][0] if used_outward_qty_result and used_outward_qty_result[0][0] is not None else 0     
-
-#         remaining_qty = item.qty - used_qty     
-
-#         if remaining_qty > 0:
-#             remaining_items.append({
-#                 "item": item.item,
-#                 "qty": remaining_qty,
-#                 "uom": item.uom,
-#                 "batch": item.batch
-#             })
-#         if remaining_qty < 0:
-#             frappe.throw("Already completed the outward entry for the container")
-
-#     return {
-#         "arrival_date": arrival_date,
-#         "inward_items": remaining_items
-#     }
-
-# from frappe.utils import getdate
 
 # @frappe.whitelist()
 # def create_sales_invoice(outward_entry):
-#     frappe.log_error("outward_entry", outward_entry)
-#     doc = frappe.get_doc("Outward Entry", outward_entry)
-#     consignment = frappe.get_doc("Consignment", doc.consignment)
+#     try:
+#         doc = frappe.get_doc("Outward Entry", outward_entry)
+#         consignment = frappe.get_doc("Inward Entry", doc.consignment)
 
-#     matching_items = []
-#     addon_items = []
+#         # if consignment.invoice_generated:
+#         #     frappe.log_error("Invoice already generated for this consignment")
+#         #     return
 
-#     outwards = frappe.get_all("Outward Entry", filters={
-#         "consignment": doc.consignment
-#     }, pluck="name")
-
-#     for entry in outwards:
-#         outward_doc = frappe.get_doc("Outward Entry", entry)
-#         addon_items += get_add_on_service_items(outward_doc.add_on_services_outward or [])
-
-#     inwards = frappe.get_all("Inward Entry", filters={
-#         "consignment": doc.consignment
-#     }, pluck="name")
-
-#     for entry in inwards:
-#         frappe.log_error("inward_entry", entry)
-#         inward_doc = frappe.get_doc("Inward Entry", entry)
-#         addon_items += get_add_on_service_items(inward_doc.add_on_services_inward or [])
-
-#     matching_items.extend(addon_items)
-#     frappe.log_error("matching_items", matching_items)
-
-#     if consignment.invoice_generated:
-#         frappe.log_error("Invoice already exists", f"{doc.name}")
-#         return
-
-#     today = getdate()
-#     traffic_config = consignment.customer_traffic_config or []
-
-#     if not traffic_config and consignment.customer:
-#         customer = frappe.get_doc("Customer", consignment.customer)
-#         traffic_config = customer.customer_traffic_config
-
-#     if not traffic_config:
-#         frappe.log_error("Customer Traffic Config not found", f"{doc.name}")
-#         return
-
-#     for container in consignment.container_entry:
-#         total_inward = frappe.db.sql("""
-#             SELECT SUM(ii.qty)
-#             FROM `tabInward Entry Item` ii
-#             JOIN `tabInward Entry` ie ON ie.name = ii.parent
-#             WHERE ie.consignment = %s AND ie.container = %s
-#         """, (doc.consignment, container.name))[0][0] or 0
-
-#         used_outward = frappe.db.sql("""
-#             SELECT SUM(oi.qty)
-#             FROM `tabOutward Entry Items` oi
-#             JOIN `tabOutward Entry` o ON o.name = oi.parent
-#             WHERE o.consignment = %s AND o.container = %s
-#         """, (doc.consignment, container.name))[0][0] or 0
-
-#         if total_inward != used_outward:
-#             return
-
-#     item_map = {}
-
-#     for item in consignment.container_entry:
-#         arrival_date = getdate(item.container_arrival_date)
-#         outward_date = frappe.db.sql("""
-#             SELECT MAX(o.date)
-#             FROM `tabOutward Entry` o
-#             JOIN `tabOutward Entry Items` oi ON oi.parent = o.name
-#             WHERE o.consignment = %s AND o.container = %s
-#         """, (doc.consignment, item.name))[0][0]
-
-#         if not outward_date:
-#             continue
-
-#         outward_date = getdate(outward_date)
-#         days_stayed = (outward_date - arrival_date).days or 1
-
-#         total_inward_qty = frappe.db.sql("""
-#             SELECT SUM(ii.qty)
-#             FROM `tabInward Entry Item` ii
-#             JOIN `tabInward Entry` ie ON ii.parent = ie.name
-#             WHERE ie.consignment = %s AND ie.container = %s
-#         """, (doc.consignment, item.name))[0][0] or 0
-
-#         outward_dates = frappe.db.sql("""
-#             SELECT o.date, SUM(oi.qty) AS qty
-#             FROM `tabOutward Entry` o
-#             JOIN `tabOutward Entry Items` oi ON oi.parent = o.name
-#             WHERE o.consignment = %s AND o.container = %s
-#             GROUP BY o.date
-#             ORDER BY o.date ASC
-#         """, (doc.consignment, item.name), as_dict=True)
-
-#         remaining_qty = total_inward_qty
-#         threshold_percent = 75
-#         threshold_qty = total_inward_qty * (threshold_percent / 100.0)
-#         discount_start_date = None
-#         for row in outward_dates:
-#             remaining_qty -= row.qty or 0
-#             if remaining_qty <= threshold_qty:
-#                 discount_start_date = getdate(row.date)
-#                 break
-
-#         for traffic in traffic_config:
-#             service_item = frappe.get_doc("Item", traffic.service_type)
-#             enable_75_rule = traffic.enable_75_rule
-#             discount_rate = traffic.after_75_discounted_rate or 0
-
-#             if service_item.custom_rent_type == "Container Based":
-#                 if item.container_size == service_item.custom_container_feat_size:
-#                     apply_discount = False
-#                     remaining_qty_temp = total_inward_qty
-#                     for row in outward_dates:
-#                         remaining_qty_temp -= row.qty or 0
-#                         if remaining_qty_temp <= threshold_qty and outward_date == getdate(row.date):
-#                             apply_discount = True
-#                             break
-#                     rate = discount_rate if enable_75_rule and apply_discount else traffic.rate
-
-#                     duration_days = max(days_stayed, traffic.minimum_commitmentnoofdays or 1)
-#                     key = f"{traffic.service_type}|{arrival_date}|{outward_date}"
-
-#                     description = f"From {arrival_date.strftime('%d.%m.%y')} to {outward_date.strftime('%d.%m.%y')}<br>"
-#                     description += f"{duration_days:02} Days * {rate} = {rate * duration_days}<br>(1*{item.container_size})"
-
-#                     item_map[key] = {
-#                         "item_code": traffic.service_type,
-#                         "qty": 1,
-#                         "uom": "Day",
-#                         "rate": rate * duration_days,
-#                         "description": description
-#                     }
-
-#             elif service_item.custom_rent_type == "Sqft Based":
-#                 sqft_min_days = traffic.minimum_commitmentnoofdays or 1
-#                 block_size = int(traffic.square_feet_size or 0)
-#                 raw_sqft = int(item.container_size or 0) * 10
-#                 sqft_used = 500 if raw_sqft <= 500 else 1000 if raw_sqft <= 1000 else raw_sqft
-#                 duration_days = max(days_stayed, sqft_min_days)
-
-#                 apply_discount = False
-#                 remaining_qty_temp = total_inward_qty
-#                 for row in outward_dates:
-#                     remaining_qty_temp -= row.qty or 0
-#                     if remaining_qty_temp <= threshold_qty and outward_date == getdate(row.date):
-#                         apply_discount = True
-#                         break
-
-#                 rate = discount_rate if enable_75_rule and apply_discount else traffic.rate
-#                 key = f"{traffic.service_type}|{arrival_date}|{outward_date}"
-
-#                 full_blocks = sqft_used // block_size
-#                 remaining_sqft = sqft_used % block_size
-
-#                 if full_blocks > 0:
-#                     description = f"From {arrival_date.strftime('%d.%m.%y')} to {outward_date.strftime('%d.%m.%y')}<br>"
-#                     description += f"{duration_days:02} Days * {rate} = {rate * duration_days}<br>({full_blocks}*{block_size})"
-#                     item_map[key] = {
-#                         "item_code": traffic.service_type,
-#                         "qty": full_blocks,
-#                         "uom": "Day",
-#                         "rate": rate * duration_days * full_blocks,
-#                         "description": description
-#                     }
-
-#                 if remaining_sqft > 0:
-#                     sqft_500_item_code = traffic.service_type if int(traffic.square_feet_size or 0) == 500 else None
-#                     if not sqft_500_item_code:
-#                         sqft_500_item = frappe.get_all(
-#                             "Item",
-#                             filters={"custom_rent_type": "Sqft Based", "custom_square_feet_size": 500},
-#                             fields=["name"],
-#                             limit=1
-#                         )
-#                         if sqft_500_item:
-#                             sqft_500_item_code = sqft_500_item[0].name
-
-#                     price_data = frappe.db.get_value(
-#                         "Item Price",
-#                         {"item_code": sqft_500_item_code, "price_list": "Standard Selling", "selling": 1},
-#                         ["price_list_rate", "valid_from", "valid_upto"],
-#                         as_dict=True
-#                     )
-#                     rate_500 = price_data.price_list_rate if price_data else 1
-#                     if price_data:
-#                         valid_from = getdate(price_data.valid_from) if price_data.valid_from else None
-#                         valid_upto = getdate(price_data.valid_upto) if price_data.valid_upto else None
-#                         if (valid_from and today < valid_from) or (valid_upto and today > valid_upto):
-#                             rate_500 = 1
-
-#                     description = f"From {arrival_date.strftime('%d.%m.%y')} to {outward_date.strftime('%d.%m.%y')}<br>"
-#                     description += f"{duration_days:02} Days * {rate_500} = {rate_500 * duration_days}<br>(1*{remaining_sqft})"
-
-#                     item_map[key + "_500sqft"] = {
-#                         "item_code": sqft_500_item_code,
-#                         "qty": 1,
-#                         "uom": "Day",
-#                         "rate": rate_500 * duration_days,
-#                         "description": description
-#                     }
-
-#     matching_items.extend([i for i in item_map.values() if i["qty"] > 0])
-
-#     if not matching_items:
-#         frappe.log_error("No items for invoice", f"{doc.name}")
-#         return
-
-#     invoice = frappe.get_doc({
-#         "doctype": "Sales Invoice",
-#         "customer": consignment.customer,
-#         "posting_date": today,
-#         "custom_reference_doctype": "Consignment",
-#         "custom_reference_docname": consignment.name,
-#         "custom_invoice_type": "Immediate Billing",
-#         "items": matching_items
-#     })
-#     invoice.insert()
-
-#     consignment.invoice_generated = 1
-#     consignment.final_invoice_link = invoice.name
-#     consignment.save()
-
-# def get_add_on_service_items(add_on_services):
-#     items = []
-#     for row in add_on_services:
-#         frappe.log_error("row", row)
-#         if not row.add_on_item or not row.rate:
-#             continue
-#         items.append({
-#             "item_code": row.add_on_item,
-#             "item_name": row.service or row.type,
-#             "description": f"{row.type} - {row.service}",
-#             "qty": row.qty,
-#             "rate": row.rate,
-#             "uom": "Nos"
-#         })
-#     return items
-
-
-@frappe.whitelist()
-def create_sales_invoice(outward_entry):
-    try:
-        doc = frappe.get_doc("Outward Entry", outward_entry)
-        consignment = frappe.get_doc("Inward Entry", doc.consignment)
-
-        # if consignment.invoice_generated:
-        #     frappe.log_error("Invoice already generated for this consignment")
-        #     return
-
-        today = getdate()
-        traffic_config = consignment.customer_tariff_config or []
-        if not traffic_config and consignment.customer:
-            customer = frappe.get_doc("Customer", consignment.customer)
-            traffic_config = customer.customer_traffic_config
-        if not traffic_config:
-            frappe.throw("Customer Tariff Config not found")
+#         today = getdate()
+#         traffic_config = consignment.customer_tariff_config or []
+#         if not traffic_config and consignment.customer:
+#             customer = frappe.get_doc("Customer", consignment.customer)
+#             traffic_config = customer.customer_traffic_config
+#         if not traffic_config:
+#             frappe.throw("Customer Tariff Config not found")
 
         
-        from collections import defaultdict
-        sqft_by_date = defaultdict(list)
-        item_map = {}
+#         from collections import defaultdict
+#         sqft_by_date = defaultdict(list)
+#         item_map = {}
 
-        inward_items = frappe.get_all(
-            "Inward Entry Item",
-            filters={"parent": consignment.name},
-            fields=["name", "qty", "container_size", "container_arrival_date"]
-        )
+#         inward_items = frappe.get_all(
+#             "Inward Entry Item",
+#             filters={"parent": consignment.name},
+#             fields=["name", "qty", "container_size", "container_arrival_date"]
+#         )
 
-        for container in inward_items:
-            total_inward = container.qty or 0
-            total_outward = frappe.db.sql("""
-                SELECT SUM(oi.qty)
-                FROM `tabOutward Entry Items` oi
-                JOIN `tabOutward Entry` o ON o.name = oi.parent
-                WHERE o.consignment = %s AND oi.container = %s
-            """, (consignment.name, container.name))[0][0] or 0
+#         for container in inward_items:
+#             total_inward = container.qty or 0
+#             total_outward = frappe.db.sql("""
+#                 SELECT SUM(oi.qty)
+#                 FROM `tabOutward Entry Items` oi
+#                 JOIN `tabOutward Entry` o ON o.name = oi.parent
+#                 WHERE o.consignment = %s AND oi.container = %s
+#             """, (consignment.name, container.name))[0][0] or 0
 
-            if total_inward != total_outward:
-                return  # Don't generate invoice until all qty is moved out
+#             if total_inward != total_outward:
+#                 return  # Don't generate invoice until all qty is moved out
 
-        for container in inward_items:
-            total_inward = container.qty or 0
-            arrival_date = getdate(container.container_arrival_date)
+#         for container in inward_items:
+#             total_inward = container.qty or 0
+#             arrival_date = getdate(container.container_arrival_date)
 
-            outward_dates = frappe.db.sql("""
-                SELECT o.date, SUM(oi.qty) AS qty
-                FROM `tabOutward Entry` o
-                JOIN `tabOutward Entry Items` oi ON oi.parent = o.name
-                WHERE o.consignment = %s AND oi.container = %s
-                GROUP BY o.date
-                ORDER BY o.date ASC
-            """, (consignment.name, container.name), as_dict=True)
+#             outward_dates = frappe.db.sql("""
+#                 SELECT o.date, SUM(oi.qty) AS qty
+#                 FROM `tabOutward Entry` o
+#                 JOIN `tabOutward Entry Items` oi ON oi.parent = o.name
+#                 WHERE o.consignment = %s AND oi.container = %s
+#                 GROUP BY o.date
+#                 ORDER BY o.date ASC
+#             """, (consignment.name, container.name), as_dict=True)
 
-            if not outward_dates:
-                continue
+#             if not outward_dates:
+#                 continue
 
-            last_invoice = frappe.db.sql("""
-                SELECT posting_date
-                FROM `tabSales Invoice`
-                WHERE docstatus = 1
-                AND custom_reference_docname = %s
-                AND custom_invoice_type = 'Monthly Billing'
-                ORDER BY posting_date DESC
-                LIMIT 1
-            """, (consignment.name,), as_dict=True)
+#             last_invoice = frappe.db.sql("""
+#                 SELECT posting_date
+#                 FROM `tabSales Invoice`
+#                 WHERE docstatus = 1
+#                 AND custom_reference_docname = %s
+#                 AND custom_invoice_type = 'Monthly Billing'
+#                 ORDER BY posting_date DESC
+#                 LIMIT 1
+#             """, (consignment.name,), as_dict=True)
 
-            if last_invoice:
-                arrival_date = getdate(last_invoice[0].posting_date)
+#             if last_invoice:
+#                 arrival_date = getdate(last_invoice[0].posting_date)
 
-            threshold_qty_75 = total_inward-(total_inward * 0.75) 
-            threshold_qty_87_5 = total_inward-(total_inward * 0.875)
-            frappe.log_error("threshold_qty_75",threshold_qty_75)
-            frappe.log_error("threshold_qty_87_5",threshold_qty_87_5)
+#             threshold_qty_75 = total_inward-(total_inward * 0.75) 
+#             threshold_qty_87_5 = total_inward-(total_inward * 0.875)
+#             frappe.log_error("threshold_qty_75",threshold_qty_75)
+#             frappe.log_error("threshold_qty_87_5",threshold_qty_87_5)
 
-            remaining_qty = total_inward
-            previous_date = arrival_date            
-            raw_sqft = int(container.container_size or 0) * 10 if container.container_size in ["20", "40"] else 0
+#             remaining_qty = total_inward
+#             previous_date = arrival_date            
+#             raw_sqft = int(container.container_size or 0) * 10 if container.container_size in ["20", "40"] else 0
 
-            for row in outward_dates:                
-                current_date = getdate(row.date)
-                days_stayed = (current_date - previous_date).days + 1                
-                remaining_qty -= row.qty
-                frappe.log_error("remaining_qty",remaining_qty)
+#             for row in outward_dates:                
+#                 current_date = getdate(row.date)
+#                 days_stayed = (current_date - previous_date).days + 1                
+#                 remaining_qty -= row.qty
+#                 frappe.log_error("remaining_qty",remaining_qty)
 
-                for traffic in traffic_config:
-                    if traffic.rent_type == "Add On":
-                        continue
-                    service_item = frappe.get_doc("Item", traffic.service_type)
-                    if not hasattr(service_item, 'custom_rent_type'):
-                        continue
+#                 for traffic in traffic_config:
+#                     if traffic.rent_type == "Add On":
+#                         continue
+#                     service_item = frappe.get_doc("Item", traffic.service_type)
+#                     if not hasattr(service_item, 'custom_rent_type'):
+#                         continue
 
-                    duration = max(days_stayed, traffic.minimum_commitmentnoofdays or 1)
+#                     duration = max(days_stayed, traffic.minimum_commitmentnoofdays or 1)
 
-                    dispatched_before_current = sum(
-                        r.qty for r in outward_dates if getdate(r.date) < getdate(row.date)
-                    )
-                    dispatched_percent = (dispatched_before_current / total_inward) * 100
+#                     dispatched_before_current = sum(
+#                         r.qty for r in outward_dates if getdate(r.date) < getdate(row.date)
+#                     )
+#                     dispatched_percent = (dispatched_before_current / total_inward) * 100
 
-                    # Determine applicable rate rule based on % dispatched BEFORE this date
-                    if traffic.enable_875_rule and dispatched_percent >= 87.5:
-                        rate = traffic.after_875discounted_rate
-                    elif traffic.enable_75_rule and dispatched_percent >= 75:
-                        rate = traffic.after_75_discounted_rate
-                    else:
-                        rate = traffic.rate
-                    frappe.log_error("rate",rate)
+#                     # Determine applicable rate rule based on % dispatched BEFORE this date
+#                     if traffic.enable_875_rule and dispatched_percent >= 87.5:
+#                         rate = traffic.after_875discounted_rate
+#                     elif traffic.enable_75_rule and dispatched_percent >= 75:
+#                         rate = traffic.after_75_discounted_rate
+#                     else:
+#                         rate = traffic.rate
+#                     frappe.log_error("rate",rate)
 
-                    description = f"From {previous_date.strftime('%d.%m.%y')} to {current_date.strftime('%d.%m.%y')}"
+#                     description = f"From {previous_date.strftime('%d.%m.%y')} to {current_date.strftime('%d.%m.%y')}"
 
-                    # Container Based
-                    if service_item.custom_rent_type == "Container Based":
-                        if str(container.container_size) == str(service_item.custom_container_feat_size):
-                            key = f"{traffic.service_type}|{previous_date}|{current_date}|container"
-                            item_map[key] = {
-                                "item_code": traffic.service_type,
-                                "qty": duration,
-                                "uom": "Day",
-                                "rate": rate,
-                                "description": description
-                            }
+#                     # Container Based
+#                     if service_item.custom_rent_type == "Container Based":
+#                         if str(container.container_size) == str(service_item.custom_container_feat_size):
+#                             key = f"{traffic.service_type}|{previous_date}|{current_date}|container"
+#                             item_map[key] = {
+#                                 "item_code": traffic.service_type,
+#                                 "qty": duration,
+#                                 "uom": "Day",
+#                                 "rate": rate,
+#                                 "description": description
+#                             }
 
-                    # LCL Based
-                    elif service_item.custom_rent_type == "LCL":
-                        if str(container.container_size) == str(service_item.custom_lcl_type):
-                            key = f"{traffic.service_type}|{previous_date}|{current_date}|lcl"
-                            item_map[key] = {
-                                "item_code": traffic.service_type,
-                                "qty": duration,
-                                "uom": "Day",
-                                "rate": rate,
-                                "description": description
-                            }
-                    elif service_item.custom_rent_type == "Sqft Based":
-                        sqft_by_date[current_date].append({
-                            "sqft": raw_sqft,
-                            "arrival_date": arrival_date,
-                            "days_stayed": days_stayed,
-                            "container_id": container.name
-                        })            
+#                     # LCL Based
+#                     elif service_item.custom_rent_type == "LCL":
+#                         if str(container.container_size) == str(service_item.custom_lcl_type):
+#                             key = f"{traffic.service_type}|{previous_date}|{current_date}|lcl"
+#                             item_map[key] = {
+#                                 "item_code": traffic.service_type,
+#                                 "qty": duration,
+#                                 "uom": "Day",
+#                                 "rate": rate,
+#                                 "description": description
+#                             }
+#                     elif service_item.custom_rent_type == "Sqft Based":
+#                         sqft_by_date[current_date].append({
+#                             "sqft": raw_sqft,
+#                             "arrival_date": arrival_date,
+#                             "days_stayed": days_stayed,
+#                             "container_id": container.name
+#                         })            
 
                     
 
-                # previous_date = current_date
+#                 # previous_date = current_date
 
-        for current_date, containers in sqft_by_date.items():
-            total_sqft = sum(c["sqft"] for c in containers)
-            arrival_date = containers[0]["arrival_date"]
-            min_days = min(c["days_stayed"] for c in containers)
+#         for current_date, containers in sqft_by_date.items():
+#             total_sqft = sum(c["sqft"] for c in containers)
+#             arrival_date = containers[0]["arrival_date"]
+#             min_days = min(c["days_stayed"] for c in containers)
 
-            # Sort configs: largest sqft blocks first
-            sqft_configs = sorted(
-                [tc for tc in traffic_config if frappe.get_value("Item", tc.service_type, "custom_rent_type") == "Sqft Based"],
-                key=lambda x: int(x.square_feet_size or 0),
-                reverse=True
-            )
+#             # Sort configs: largest sqft blocks first
+#             sqft_configs = sorted(
+#                 [tc for tc in traffic_config if frappe.get_value("Item", tc.service_type, "custom_rent_type") == "Sqft Based"],
+#                 key=lambda x: int(x.square_feet_size or 0),
+#                 reverse=True
+#             )
 
-            remaining_sqft = total_sqft
-            frappe.log_error("Remaining SQFT", remaining_sqft)
+#             remaining_sqft = total_sqft
+#             frappe.log_error("Remaining SQFT", remaining_sqft)
 
-            for config in sqft_configs:
-                block_size = int(config.square_feet_size or 0)
-                frappe.log_error("Block Size", block_size)
-                if block_size <= 0:
-                    continue
+#             for config in sqft_configs:
+#                 block_size = int(config.square_feet_size or 0)
+#                 frappe.log_error("Block Size", block_size)
+#                 if block_size <= 0:
+#                     continue
 
-                while remaining_sqft >= block_size:
-                    remaining_sqft -= block_size
-                    frappe.log_error("Remaining SQFTqw2w2", remaining_sqft)
-                    duration = max(min_days, config.minimum_commitmentnoofdays or 1)
-                    frappe.log_error("Duration", duration)
+#                 while remaining_sqft >= block_size:
+#                     remaining_sqft -= block_size
+#                     frappe.log_error("Remaining SQFTqw2w2", remaining_sqft)
+#                     duration = max(min_days, config.minimum_commitmentnoofdays or 1)
+#                     frappe.log_error("Duration", duration)
 
-                    dispatched_before_current = sum(
-                        r.qty for r in outward_dates if getdate(r.date) < getdate(row.date)
-                    )
-                    dispatched_percent = (dispatched_before_current / total_inward) * 100 if total_inward else 0
+#                     dispatched_before_current = sum(
+#                         r.qty for r in outward_dates if getdate(r.date) < getdate(row.date)
+#                     )
+#                     dispatched_percent = (dispatched_before_current / total_inward) * 100 if total_inward else 0
 
-                    if config.enable_875_rule and dispatched_percent >= 87.5:
-                        rate = config.after_875discounted_rate
-                    elif config.enable_75_rule and dispatched_percent >= 75:
-                        rate = config.after_75_discounted_rate
-                    else:
-                        rate = config.rate
+#                     if config.enable_875_rule and dispatched_percent >= 87.5:
+#                         rate = config.after_875discounted_rate
+#                     elif config.enable_75_rule and dispatched_percent >= 75:
+#                         rate = config.after_75_discounted_rate
+#                     else:
+#                         rate = config.rate
 
-                    key = f"{config.service_type}|{arrival_date}|{current_date}|{block_size}"
-                    item_map[key] = {
-                        "item_code": config.service_type,
-                        "qty": duration,
-                        "uom": "Day",
-                        "rate": rate,
-                        "description": f"From {arrival_date.strftime('%d.%m.%y')} to {current_date.strftime('%d.%m.%y')}"
-                    }
+#                     key = f"{config.service_type}|{arrival_date}|{current_date}|{block_size}"
+#                     item_map[key] = {
+#                         "item_code": config.service_type,
+#                         "qty": duration,
+#                         "uom": "Day",
+#                         "rate": rate,
+#                         "description": f"From {arrival_date.strftime('%d.%m.%y')} to {current_date.strftime('%d.%m.%y')}"
+#                     }
 
-            # Handle remaining sqft (e.g., < smallest block size)
-            if remaining_sqft > 0:
-                # Find smallest available config that is >= remaining_sqft
-                eligible_configs = [c for c in sqft_configs if int(c.square_feet_size or 0) > 0]
-                smallest_config = min(eligible_configs, key=lambda x: int(x.square_feet_size), default=None)
+#             # Handle remaining sqft (e.g., < smallest block size)
+#             if remaining_sqft > 0:
+#                 # Find smallest available config that is >= remaining_sqft
+#                 eligible_configs = [c for c in sqft_configs if int(c.square_feet_size or 0) > 0]
+#                 smallest_config = min(eligible_configs, key=lambda x: int(x.square_feet_size), default=None)
 
-                if smallest_config:
-                    block_size = int(smallest_config.square_feet_size)
-                    duration = max(min_days, smallest_config.minimum_commitmentnoofdays or 1)
+#                 if smallest_config:
+#                     block_size = int(smallest_config.square_feet_size)
+#                     duration = max(min_days, smallest_config.minimum_commitmentnoofdays or 1)
 
-                    dispatched_before_current = sum(
-                        r.qty for r in outward_dates if getdate(r.date) < getdate(row.date)
-                    )
-                    dispatched_percent = (dispatched_before_current / total_inward) * 100 if total_inward else 0
+#                     dispatched_before_current = sum(
+#                         r.qty for r in outward_dates if getdate(r.date) < getdate(row.date)
+#                     )
+#                     dispatched_percent = (dispatched_before_current / total_inward) * 100 if total_inward else 0
 
-                    if smallest_config.enable_875_rule and dispatched_percent >= 87.5:
-                        rate = smallest_config.after_875discounted_rate
-                    elif smallest_config.enable_75_rule and dispatched_percent >= 75:
-                        rate = smallest_config.after_75_discounted_rate
-                    else:
-                        rate = smallest_config.rate
+#                     if smallest_config.enable_875_rule and dispatched_percent >= 87.5:
+#                         rate = smallest_config.after_875discounted_rate
+#                     elif smallest_config.enable_75_rule and dispatched_percent >= 75:
+#                         rate = smallest_config.after_75_discounted_rate
+#                     else:
+#                         rate = smallest_config.rate
 
-                    key = f"{smallest_config.service_type}|{arrival_date}|{current_date}|{remaining_sqft}|Partial Block"
-                    item_map[key] = {
-                        "item_code": smallest_config.service_type,
-                        "qty": duration,
-                        "uom": "Day",
-                        "rate": rate,
-                        "description": f"From {arrival_date.strftime('%d.%m.%y')} to {current_date.strftime('%d.%m.%y')} (Partial block for {remaining_sqft} sqft)"
-                    }
+#                     key = f"{smallest_config.service_type}|{arrival_date}|{current_date}|{remaining_sqft}|Partial Block"
+#                     item_map[key] = {
+#                         "item_code": smallest_config.service_type,
+#                         "qty": duration,
+#                         "uom": "Day",
+#                         "rate": rate,
+#                         "description": f"From {arrival_date.strftime('%d.%m.%y')} to {current_date.strftime('%d.%m.%y')} (Partial block for {remaining_sqft} sqft)"
+#                     }
 
 
 
-        matching_items = [i for i in item_map.values() if i["qty"] > 0]
-        frappe.log_error("Matching Items", matching_items)
-        if not matching_items:
-            frappe.log_error("No invoice items found")
-            return
+#         matching_items = [i for i in item_map.values() if i["qty"] > 0]
+#         frappe.log_error("Matching Items", matching_items)
+#         if not matching_items:
+#             frappe.log_error("No invoice items found")
+#             return
 
-        invoice = frappe.get_doc({
-            "doctype": "Sales Invoice",
-            "customer": consignment.customer,
-            "posting_date": today,
-            "custom_reference_doctype": "Inward Entry",
-            "custom_reference_docname": consignment.name,
-            "custom_invoice_type": "Immediate Billing",
-            "custom_consignment": consignment.boeinvoice_no,
-            "items": matching_items
-        })
-        invoice.insert()
+#         invoice = frappe.get_doc({
+#             "doctype": "Sales Invoice",
+#             "customer": consignment.customer,
+#             "posting_date": today,
+#             "custom_reference_doctype": "Inward Entry",
+#             "custom_reference_docname": consignment.name,
+#             "custom_invoice_type": "Immediate Billing",
+#             "custom_consignment": consignment.boeinvoice_no,
+#             "items": matching_items
+#         })
+#         invoice.insert()
 
-        consignment.invoice_generated = 1
-        consignment.save()
+#         consignment.invoice_generated = 1
+#         consignment.save()
 
-        return invoice.name
+#         return invoice.name
 
-    except Exception:
-        frappe.log_error(frappe.get_traceback(), f"Failed to create invoice for outward entry {outward_entry}")
+#     except Exception:
+#         frappe.log_error(frappe.get_traceback(), f"Failed to create invoice for outward entry {outward_entry}")
 
 

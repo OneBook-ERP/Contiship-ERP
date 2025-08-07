@@ -6,14 +6,14 @@
   },
   {
    "chart_name": "Customer Invoice Trends",
-   "label": "Customer Invoice Trends"
+   "label": "Customer Invoice"
   },
   {
    "chart_name": "Outward Chart",
    "label": "Outward Entry"
   }
  ],
- "content": "[{\"id\":\"OttwQQUFJu\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Contiship</span>\",\"col\":12}},{\"id\":\"xJ2O_Qjj-l\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"yXIha74tPR\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"XCKr78c2Ef\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"SBNEK7xof1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item\",\"col\":3}},{\"id\":\"t6Kmysd-or\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inward Entry\",\"col\":3}},{\"id\":\"eGqn7Tw7xg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Outward Entry\",\"col\":3}},{\"id\":\"QOqgeIi00O\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Invoice\",\"col\":3}},{\"id\":\"EQnEvlQEWZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment\",\"col\":3}},{\"id\":\"Yl3pwz5Maq\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"jmjBEkmFG4\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"sSRNbYsUBI\",\"type\":\"card\",\"data\":{\"card_name\":\"Accounts\",\"col\":4}},{\"id\":\"THCCBelNv-\",\"type\":\"card\",\"data\":{\"card_name\":\"Stock\",\"col\":4}},{\"id\":\"XYkCX4g-cZ\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ef6UMzAQnE\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Inward Entry\",\"col\":6}},{\"id\":\"yplP_dQXb6\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Outward Entry\",\"col\":6}},{\"id\":\"SA5He7P6-4\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Customer Invoice Trends\",\"col\":12}}]",
+ "content": "[{\"id\":\"OttwQQUFJu\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Contiship</span>\",\"col\":12}},{\"id\":\"xJ2O_Qjj-l\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"yXIha74tPR\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"XCKr78c2Ef\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"SBNEK7xof1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item\",\"col\":3}},{\"id\":\"t6Kmysd-or\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inward Entry\",\"col\":3}},{\"id\":\"eGqn7Tw7xg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Outward Entry\",\"col\":3}},{\"id\":\"QOqgeIi00O\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Invoice\",\"col\":3}},{\"id\":\"EQnEvlQEWZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment\",\"col\":3}},{\"id\":\"Yl3pwz5Maq\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"jmjBEkmFG4\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"sSRNbYsUBI\",\"type\":\"card\",\"data\":{\"card_name\":\"Accounts\",\"col\":4}},{\"id\":\"THCCBelNv-\",\"type\":\"card\",\"data\":{\"card_name\":\"Stock\",\"col\":4}},{\"id\":\"XYkCX4g-cZ\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ef6UMzAQnE\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Inward Entry\",\"col\":6}},{\"id\":\"yplP_dQXb6\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Outward Entry\",\"col\":6}},{\"id\":\"SA5He7P6-4\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Customer Invoice\",\"col\":12}}]",
  "creation": "2025-06-10 23:39:06.191757",
  "custom_blocks": [],
  "docstatus": 0,
@@ -105,7 +105,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-08-02 12:31:04.342792",
+ "modified": "2025-08-05 10:58:30.571592",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Welcome to Contiship",
