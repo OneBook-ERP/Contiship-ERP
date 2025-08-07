@@ -7,16 +7,32 @@ from frappe.model.document import Document
 
 class InwardEntry(Document):
 
-    # def validate(self):        
-    #     inward_total_qty = sum(row.qty or 0 for row in self.inward_entry_items)
-    #     addon_total_qty = sum(row.qty or 0 for row in self.add_on_services_inward)
-
-    #     if addon_total_qty > inward_total_qty:
-    #         frappe.throw(f"Total quantity mismatch: Inward Entry Items = {inward_total_qty}, Add-on Services = {addon_total_qty}")
-
+    # def validate(self):
+        
+    
     def on_submit(self):
+        self.validate_services()
         if self.add_on_services_inward:
             frappe.enqueue("contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.create_sales_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", inward_entry=self.name)
+
+    def validate_services(self):
+        if self.service_type == "Sqft Based":
+            if not any(t.rent_type == "Sqft Based" for t in self.customer_tariff_config):
+                frappe.throw("Sqft Based tariff is not set for this Inward Entry tariff.")
+
+        else:
+            for items in self.inward_entry_items:
+                if items.container_size == "20":
+                    if not any(t.rent_type == "Container Based" and t.container_feet == 20 for t in self.customer_tariff_config):
+                        frappe.throw("20 Ft Container Based tariff is not set for this Inward Entry tariff.")
+                elif items.container_size == "40":
+                    if not any(t.rent_type == "Container Based" and t.container_feet == 40 for t in self.customer_tariff_config):
+                        frappe.throw("40 Ft Container Based tariff is not set for this Inward Entry tariff.")
+                else:
+                    if not any(t.rent_type == "LCL" and t.lcl_type == items.container_size for t in self.customer_tariff_config):
+                        frappe.throw(f"{items.container_size} LCL Based tariff is not set for this Inward Entry tariff.")
+
+                    
 
 @frappe.whitelist()
 def create_sales_invoice(inward_entry):
@@ -40,7 +56,7 @@ def create_sales_invoice(inward_entry):
             "item_code": row.add_on_item,
             "qty": row.qty or 1,            
             "rate": row.rate,
-            "description": "",
+            "description": row.description or "",
             "uom": row.uom or "Nos"           
         })
 
@@ -101,9 +117,20 @@ def get_arrival_date(name):
 
 
 @frappe.whitelist()
-def get_items_rate(item):
-    from frappe.utils import getdate, nowdate    
+def get_items_rate(item,tariffs):
+    from frappe.utils import getdate, nowdate
+    import json  
     today = getdate(nowdate())
+
+    if tariffs:
+        if isinstance(tariffs, str):
+            tariffs = json.loads(tariffs)
+
+        for tariff in tariffs:
+            if tariff.get("service_type") == item:
+                return {
+                    "price": tariff.get("rate", 0)
+                }
 
     price_data = frappe.db.get_value(
         "Item Price",

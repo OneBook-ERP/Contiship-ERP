@@ -59,10 +59,10 @@ frappe.query_reports["Outward Report"] = {
 			}			
 		}
 		if (column.fieldname === "qty") {
-			return `<span style="color: green; font-weight: bold;">${value}</span>`;
+			return `<span style="color: red; font-weight: bold;">${value}</span>`;
 		}			
 		if (column.fieldname === "inward_qty") {
-			return `<span style="color: red; font-weight: bold;">${value}</span>`;
+			return `<span style="color: green; font-weight: bold;">${value}</span>`;
 		}
 	
 		return value;

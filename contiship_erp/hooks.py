@@ -157,7 +157,7 @@ doc_events = {
 
 scheduler_events = {
     "daily": [
-        "contiship_erp.custom.traffic_custom.create_monthly_sales_invoice",
+        "contiship_erp.custom.traffic_custom.generate_monthly_container_invoices",
         "contiship_erp.custom.traffic_custom.create_monthly_additional_sqft_invoice"
     ],
     "cron": {

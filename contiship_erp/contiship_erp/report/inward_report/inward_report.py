@@ -14,13 +14,13 @@ def get_columns():
 		{"label": "Status", "fieldname": "docstatus", "width": 100},
 		{"label": "Customer", "fieldname": "customer", "fieldtype": "Link", "options": "Customer", "width": 300},
 		{"label": "Item", "fieldname": "item", "fieldtype": "Link", "options": "Item", "width": 150},
+		{"label": "Quantity", "fieldname": "qty", "fieldtype": "Int", "precision": 0,"width": 100,},
 		{"label": "Grade", "fieldname": "grade", "width": 100},
+		{"label": "Crossing Item", "fieldname": "crossing_item", "width": 100},
 		{"label": "Container", "fieldname": "container", "width": 150},
 		{"label": "Container Size", "fieldname": "container_size", "width": 100},
 		{"label": "Arrival Date", "fieldname": "arrival_date", "fieldtype": "Date", "width": 110},
-		{"label": "Quantity", "fieldname": "qty", "fieldtype": "Float", "width": 100},
 	]
-
 
 def get_data(filters):
 	conditions = ""
@@ -44,7 +44,6 @@ def get_data(filters):
 	if filters.get("consignment"):
 		conditions += " AND ie.name = %(consignment)s"
 		values["consignment"] = filters["consignment"]
-	
 
 	return frappe.db.sql("""
 		SELECT
@@ -59,8 +58,12 @@ def get_data(filters):
 			ied.grade,
 			ied.container,
 			ied.container_size,
+			CASE 
+				WHEN ied.crossing_item IS NOT NULL AND ied.crossing_item != '' THEN 'Yes'
+				ELSE 'No'
+			END as crossing_item,
 			ie.arrival_date,
-			ied.qty
+			CAST(ied.qty AS UNSIGNED) as qty
 		FROM
 			`tabInward Entry` ie
 		JOIN
@@ -70,4 +73,3 @@ def get_data(filters):
 		ORDER BY
 			ie.arrival_date DESC
 	""".format(conditions=conditions), values, as_dict=1)
-

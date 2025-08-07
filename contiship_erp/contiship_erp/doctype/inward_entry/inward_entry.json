@@ -14,9 +14,11 @@
   "column_break_ltov",
   "arrival_date",
   "cha_name",
-  "monthly_invoice_generated",
+  "monthly_invoice_date",
   "section_break_quek",
   "description",
+  "column_break_atgv",
+  "service_type",
   "section_break_pcxa",
   "inward_entry_items",
   "section_break_itnv",
@@ -122,11 +124,21 @@
   },
   {
    "allow_on_submit": 1,
-   "default": "0",
-   "fieldname": "monthly_invoice_generated",
-   "fieldtype": "Check",
+   "fieldname": "monthly_invoice_date",
+   "fieldtype": "Date",
    "hidden": 1,
-   "label": "Monthly Invoice Generated"
+   "label": "Monthly Invoice Date"
+  },
+  {
+   "fieldname": "column_break_atgv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "service_type",
+   "fieldtype": "Select",
+   "label": "Service Type",
+   "options": "\nSqft Based\nOthers",
+   "reqd": 1
   }
  ],
  "force_re_route_to_default_view": 1,
@@ -143,7 +155,7 @@
    "link_fieldname": "consignment"
   }
  ],
- "modified": "2025-08-02 08:57:30.705362",
+ "modified": "2025-08-07 15:54:34.609834",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
