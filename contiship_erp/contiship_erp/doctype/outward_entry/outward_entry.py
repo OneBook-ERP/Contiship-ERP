@@ -374,8 +374,8 @@ def create_container_sales_invoice(outward_entry):
                     continue
                 if month_invoice_details["custom_bill_to_date"]:
                     arrival_date = getdate(month_invoice_details["custom_bill_to_date"]) + timedelta(days=1)
-                else:
-                    arrival_date = getdate(item.container_arrival_date)
+            else:
+                arrival_date = getdate(item.container_arrival_date)
 
             tariff = next((
                 t for t in tariffs 
