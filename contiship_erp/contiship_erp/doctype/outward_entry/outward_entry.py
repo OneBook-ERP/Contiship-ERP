@@ -188,9 +188,11 @@ def get_all_inward_items(consignment):
         FROM `tabInward Entry Item` iei
         JOIN `tabInward Entry` ie ON ie.name = iei.parent
         WHERE ie.name = %(consignment)s
+        ORDER BY iei.idx ASC
     """, {
         "consignment": consignment
     }, as_dict=True)
+
 
     items = []
     for row in result:
@@ -213,36 +215,56 @@ def get_all_inward_items(consignment):
 
 @frappe.whitelist()
 def get_inward_html_table(customer):
-    entries = frappe.get_all("Inward Entry",
+    entries = frappe.get_all(
+        "Inward Entry",
         filters={"customer": customer, "invoice_generated": 0, "docstatus": 1},
         fields=["name", "arrival_date", "docstatus", "boeinvoice_no"]
     )
 
     if not entries:
-        return "<p>No Inward Entries found for this customer.</p>"
+        return "<p class='text-muted'>No Inward Entries found for this customer.</p>"
 
     html = """
     <style>
-        table.table-bordered {
-            border: 2px solid #000;
+        .inward-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+            font-size: 13px;
         }
-        table.table-bordered th,
-        table.table-bordered td {
-            border: 2px solid #000;
+        .inward-table th, .inward-table td {
+            border: 1px solid #444;
+            padding: 6px 8px;
+            text-align: left;
         }
-        table.table-sm th,
-        table.table-sm td {
-            border: 2px solid #000 !important;
+        .inward-table th {
+            background-color: #f4f4f4;
+            font-weight: 600;
+        }
+        .inward-table .nested-table th {
+            background-color: #fafafa;
+            font-weight: 500;
+        }
+        .inward-table .nested-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0;
+        }
+        .inward-table .nested-table td, 
+        .inward-table .nested-table th {
+            border: 1px solid #ccc;
+            padding: 4px 6px;
+            font-size: 12px;
         }
     </style>
     <div class="table-responsive">
-        <table class="table table-bordered">
+        <table class="inward-table">
             <thead>
                 <tr>
-                    <th>Inward ID</th>
-                    <th>BOE Invoice</th>
-                    <th>Date</th>
-                    <th>Status</th>
+                    <th style="width: 10%;">Inward ID</th>
+                    <th style="width: 10%;">BOE Invoice</th>
+                    <th style="width: 8%;">Date</th>
+                    <th style="width: 6%;">Status</th>
                     <th>Items</th>
                 </tr>
             </thead>
@@ -253,9 +275,10 @@ def get_inward_html_table(customer):
         item_rows = ""
         has_available_item = False
 
-        inward_items = frappe.get_all("Inward Entry Item",
+        inward_items = frappe.get_all(
+            "Inward Entry Item",
             filters={"parent": entry.name},
-            fields=["name", "item", "qty", "uom", "grade_item", "grade", "container", "container_arrival_date"]
+            fields=["name", "item", "qty", "uom", "grade_item", "grade", "container", "container_arrival_date","crossing_item"]
         )
 
         for item in inward_items:
@@ -276,11 +299,11 @@ def get_inward_html_table(customer):
                     <tr>
                         <td>{item.container}</td>
                         <td>{item.item}</td>
-                        <td>{formatdate(item.container_arrival_date)}</td>
-                        <td>{item.grade_item or ""}</td>
+                        <td>{formatdate(item.container_arrival_date)}</td>                       
                         <td>{item.grade or ""}</td>
+                        <td>{"Yes" if item.crossing_item == 1 else ""}</td>
                         <td>{item.uom or ""}</td>
-                        <td>{available_qty} / {item.qty}</td>
+                        <td style="text-align: right;">{available_qty} / {item.qty}</td>
                     </tr>
                 """
 
@@ -292,16 +315,16 @@ def get_inward_html_table(customer):
                     <td>{formatdate(entry.arrival_date)}</td>
                     <td>{"Submitted" if entry.docstatus == 1 else "Draft"}</td>
                     <td>
-                        <table class="table table-sm table-bordered mb-0">
+                        <table class="nested-table">
                             <thead>
                                 <tr>
                                     <th>Container</th>
                                     <th>Item</th>
-                                    <th>Arrival Date</th>
-                                    <th>Grade Item</th>
+                                    <th>Arrival Date</th>                                  
                                     <th>Grade</th>
-                                    <th>UOM</th>                                    
-                                    <th>Available / Total</th>
+                                    <th>Crossing</th>
+                                    <th>UOM</th>
+                                    <th style="text-align: right;">Available / Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -314,6 +337,7 @@ def get_inward_html_table(customer):
 
     html += "</tbody></table></div>"
     return html
+
 
 
 from frappe.utils import getdate, add_days
@@ -374,8 +398,8 @@ def create_container_sales_invoice(outward_entry):
                     continue
                 if month_invoice_details["custom_bill_to_date"]:
                     arrival_date = getdate(month_invoice_details["custom_bill_to_date"]) + timedelta(days=1)
-                else:
-                    arrival_date = getdate(item.container_arrival_date)
+            else:
+                arrival_date = getdate(item.container_arrival_date)
 
             tariff = next((
                 t for t in tariffs 
