@@ -681,7 +681,7 @@ def generate_monthly_container_invoices(now=None):
                                 slab_type = "normal"
                             
                             if idx + 1 < len(outward_items):
-                                next_date = getdate(outward_items[idx + 1]["date"]) - timedelta(days=1)
+                                next_date = getdate(outward_items[idx + 1]["date"])
                             else:
                                 next_date = final_invoice_date
                             

@@ -6,15 +6,14 @@ from datetime import datetime, timedelta
 
 
 
-# from contiship_erp.custom.traffic_custom import create_monthly_sales_invoice
+
 
 class OutwardEntry(Document):
 
     def validate(self):
         self.calculate_available_space()       
 
-    def on_submit(self):
-        # create_monthly_sales_invoice()
+    def on_submit(self):        
         frappe.enqueue("contiship_erp.contiship_erp.doctype.outward_entry.outward_entry.create_container_sales_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", outward_entry=self.name)
         # frappe.enqueue("contiship_erp.contiship_erp.doctype.outward_entry.outward_entry.create_sales_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", outward_entry=self.name)
    
@@ -358,6 +357,7 @@ def create_container_sales_invoice(outward_entry):
         if not tariffs:
             frappe.throw("No tariff configuration found.")
 
+        containers_not_fully_outwarded = []
         for item in inward.inward_entry_items:
             if item.crossing_item:
                 continue
@@ -369,22 +369,27 @@ def create_container_sales_invoice(outward_entry):
                     "container": container,
                     "parenttype": "Outward Entry",
                     "docstatus": 1,
-                    "crossing_item": 0,                    
+                    "crossing_item": 0,
+                    "parent": ["!=", outward.name]                    
                 },
                 fields=["qty"]
             )
 
             total_outward_qty = sum(out.qty for out in outward_items)
+            frappe.log_error("total_outward_qty__before", total_outward_qty)
             if outward:                
                 for row in outward.items:
                     if row.container == container:
                         total_outward_qty += row.qty
-            frappe.log_error("total_outward_qty", total_outward_qty)
+            frappe.log_error("total_outward_qty__after", total_outward_qty)
             frappe.log_error("inward_qty", inward_qty)
 
             if total_outward_qty < inward_qty:
-                frappe.log_error(f"Container {container} not fully outwarded yet.")
-                return
+                containers_not_fully_outwarded.append(container)                
+           
+        if containers_not_fully_outwarded:
+            frappe.log_error(f"Cannot create invoice. Containers not fully outwarded: {', '.join(containers_not_fully_outwarded)}")
+            return
 
         invoice_items = []
 
@@ -476,9 +481,11 @@ def create_container_sales_invoice(outward_entry):
                         slab_type = "normal"
                     
                     if idx + 1 < len(outward_items):
-                        next_date = getdate(outward_items[idx + 1]["date"]) - timedelta(days=1)
+                        next_date = getdate(outward_items[idx + 1]["date"])
                     else:
                         next_date = final_invoice_date
+                    frappe.log_error("final_invoice_date",final_invoice_date)
+                    frappe.log_error("next_date",next_date)
                     
                     if next_date < current_start_date:
                         continue
