@@ -277,7 +277,8 @@ def get_inward_html_table(customer):
         inward_items = frappe.get_all(
             "Inward Entry Item",
             filters={"parent": entry.name},
-            fields=["name", "item", "qty", "uom", "grade_item", "grade", "container", "container_arrival_date","crossing_item"]
+            fields=["name", "item", "qty", "uom", "grade_item", "grade", "container", "container_arrival_date","crossing_item","idx"],
+            order_by="idx asc"
         )
 
         for item in inward_items:
@@ -468,7 +469,8 @@ def create_container_sales_invoice(outward_entry):
                     dispatched_before_current = dispatched_total   
                     dispatched_total += row["qty"]
                     dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0
-
+                    frappe.log_error("dispatched_percent", dispatched_percent)
+                    frappe.log_error("dispatched_total", dispatched_total)
                     
                     if tariff.enable_875_rule and dispatched_percent >= 87.5 :
                         rate = tariff.after_875discounted_rate
@@ -481,12 +483,15 @@ def create_container_sales_invoice(outward_entry):
                         slab_type = "normal"
                     
                     if idx + 1 < len(outward_items):
-                        next_date = getdate(outward_items[idx + 1]["date"])
+                        frappe.log_error("hai")
+                        next_date = getdate(outward_items[idx]["date"])
                     else:
                         next_date = final_invoice_date
                     frappe.log_error("final_invoice_date",final_invoice_date)
                     frappe.log_error("next_date",next_date)
-                    
+                    frappe.log_error("rate",rate)
+                    frappe.log_error("current_start_date",current_start_date)
+                    frappe.log_error("next_date",next_date)
                     if next_date < current_start_date:
                         continue
 
@@ -500,7 +505,7 @@ def create_container_sales_invoice(outward_entry):
                     current_start_date = next_date + timedelta(days=1)
                
                 item_name = frappe.get_value("Item", tariff.service_type, "item_name")
-
+                frappe.log_error("slabs",slabs)
                 merged_slabs = []
                 for slab in slabs:
                     if not merged_slabs:
@@ -513,6 +518,7 @@ def create_container_sales_invoice(outward_entry):
                             last["to_date"] = slab["to_date"]
                         else:
                             merged_slabs.append(slab)
+                frappe.log_error("merged_slabs",merged_slabs)
 
                 for slab in merged_slabs:
                     slab_days = (slab["to_date"] - slab["from_date"]).days + 1
