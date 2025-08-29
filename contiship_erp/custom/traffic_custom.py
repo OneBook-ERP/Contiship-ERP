@@ -101,8 +101,12 @@ def sales_invoice_on_submit(doc, method):
     from frappe.model.naming import make_autoname
     import datetime
 
-    year = datetime.datetime.now().strftime("%Y")
-    new_name = make_autoname(f"ACC-SINV-{year}-.#####")
+    year = datetime.datetime.now().year
+    current = str(year)[-2:] 
+    next_year = str(year + 1)[-2:]
+
+    new_name = make_autoname(f"GWH/{current}-{next_year}/.###")
+
 
     if doc.name != new_name:
         rename_doc("Sales Invoice", doc.name, new_name, force=True)
@@ -111,6 +115,13 @@ def sales_invoice_on_submit(doc, method):
         frappe.log_error("Renamed Invoice", f"{doc.name} ➜ {new_name}")
 
 
+
+def sales_invoice_after_insert(doc, method):
+    if doc.taxes_and_charges:
+        taxes_template = frappe.get_doc("Sales Taxes and Charges Template", doc.taxes_and_charges)
+        doc.set("taxes", [t.as_dict() for t in taxes_template.taxes])
+        doc.save(ignore_permissions=True)
+        frappe.db.commit()
 
 # ----------------------------INVOICE CREATION----------------------------
 
@@ -186,7 +197,7 @@ def create_monthly_additional_sqft_invoice(end=None):
     month = today.month
     days_in_month = calendar.monthrange(year, month)[1]
     
-    if today != getdate(f"{year}-{month:02d}-{days_in_month - 1}") and not end:
+    if today != getdate(f"{year}-{month:02d}-{days_in_month - 2}") and not end:
         return "Not scheduled date"
 
     start_date = getdate(f"{year}-{month:02d}-01")
@@ -405,9 +416,9 @@ def generate_invoice_for_consignment(consignment_id, billing_date):
 
                     duration = max(days_stayed, traffic.minimum_commitmentnoofdays or 1)
 
-                    if traffic.enable_875_rule and apply_87_5_discount:
+                    if traffic.enable_875_rule and apply_87_5_discount and (days_stayed>traffic.minimum_commitmentnoofdays):
                         rate = traffic.after_875discounted_rate
-                    elif traffic.enable_75_rule and apply_75_discount:
+                    elif traffic.enable_75_rule and apply_75_discount and (days_stayed>traffic.minimum_commitmentnoofdays):
                         rate = traffic.after_75_discounted_rate
                     else:
                         rate = traffic.rate
@@ -554,7 +565,7 @@ def generate_monthly_container_invoices(now=None):
         year = today.year
         month = today.month
         days_in_month = calendar.monthrange(year, month)[1]
-        if today != getdate(f"{year}-{month:02d}-{days_in_month - 1}") and not now:
+        if today != getdate(f"{year}-{month:02d}-{days_in_month - 2}") and not now:
             return "Not scheduled date"
         first_day = datetime(today.year, today.month, 1).date()
         last_day = calendar.monthrange(today.year, today.month)[1]
