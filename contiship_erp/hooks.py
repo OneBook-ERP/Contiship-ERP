@@ -150,7 +150,8 @@ doctype_js = {
 
 doc_events = {
 	"Sales Invoice": {
-		"on_submit": "contiship_erp.custom.traffic_custom.sales_invoice_on_submit"
+		"on_submit": "contiship_erp.custom.traffic_custom.sales_invoice_on_submit",
+        "after_insert": "contiship_erp.custom.traffic_custom.sales_invoice_after_insert"
 	}
 }
 

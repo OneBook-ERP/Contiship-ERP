@@ -472,10 +472,10 @@ def create_container_sales_invoice(outward_entry):
                     frappe.log_error("dispatched_percent", dispatched_percent)
                     frappe.log_error("dispatched_total", dispatched_total)
                     
-                    if tariff.enable_875_rule and dispatched_percent >= 87.5 :
+                    if tariff.enable_875_rule and dispatched_percent >= 87.5 and (duration_days>commitment_days):
                         rate = tariff.after_875discounted_rate
                         slab_type = "87.5"
-                    elif tariff.enable_75_rule and dispatched_percent >= 75:
+                    elif tariff.enable_75_rule and dispatched_percent >= 75 and (duration_days>commitment_days):
                         rate = tariff.after_75_discounted_rate
                         slab_type = "75"
                     else:
