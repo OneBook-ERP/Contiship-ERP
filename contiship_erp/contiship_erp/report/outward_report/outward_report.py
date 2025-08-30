@@ -18,7 +18,7 @@ def get_columns():
 		{"label": "Item", "fieldname": "item", "fieldtype": "Link", "options": "Item", "width": 120},
 		{"label": "Grade", "fieldname": "grade", "width": 100},
 		{"label": "Crossing Item", "fieldname": "crossing_item", "width": 100},
-		{"label": "Container", "fieldname": "container", "fieldtype": "Data", "width": 120},
+		{"label": "Container", "fieldname": "container_name", "fieldtype": "Data", "width": 120},
 		{"label": "Total Inward Qty", "fieldname": "inward_qty", "fieldtype": "Int", "width": 120},
 		{"label": "Available Qty", "fieldname": "available_qty", "fieldtype": "Int", "width": 120},
 		{"label": "Total Outward Qty", "fieldname": "qty", "fieldtype": "Int", "width": 100},
@@ -65,24 +65,24 @@ def get_data(filters):
 			oe.consignment,
 			oed.item,
 			oed.grade,
-			ied.container,   -- 🔹 Get container from Inward Entry Item
+			oed.container_name,
 			CAST(oed.qty AS UNSIGNED) AS qty,
 			CAST((
-				SELECT SUM(ied2.qty)
-				FROM `tabInward Entry Item` ied2
-				JOIN `tabInward Entry` ie2 ON ie2.name = ied2.parent
+				SELECT SUM(ied.qty)
+				FROM `tabInward Entry Item` ied
+				JOIN `tabInward Entry` ie ON ie.name = ied.parent
 				WHERE
-					ie2.name = oe.consignment
-					AND ied2.item = oed.item
+					ie.name = oe.consignment
+					AND ied.item = oed.item
 			) AS UNSIGNED) AS inward_qty,
 			CAST((
 				COALESCE((
-					SELECT SUM(ied3.qty)
-					FROM `tabInward Entry Item` ied3
-					JOIN `tabInward Entry` ie3 ON ie3.name = ied3.parent
+					SELECT SUM(ied.qty)
+					FROM `tabInward Entry Item` ied
+					JOIN `tabInward Entry` ie ON ie.name = ied.parent
 					WHERE
-						ie3.name = oe.consignment
-						AND ied3.item = oed.item
+						ie.name = oe.consignment
+						AND ied.item = oed.item
 				), 0) -
 				COALESCE((
 					SELECT SUM(oed2.qty)
@@ -99,10 +99,8 @@ def get_data(filters):
 			`tabOutward Entry` oe
 		JOIN
 			`tabOutward Entry Items` oed ON oed.parent = oe.name
-		LEFT JOIN
-			`tabInward Entry Item` ied ON ied.parent = oe.consignment AND ied.item = oed.item
 		WHERE
 			1=1 {conditions}
 		ORDER BY
 			oe.date DESC
-""".format(conditions=conditions), values, as_dict=1)
+	""".format(conditions=conditions), values, as_dict=1)
