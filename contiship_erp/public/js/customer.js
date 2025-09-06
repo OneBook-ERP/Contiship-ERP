@@ -12,13 +12,7 @@ frappe.ui.form.on("Customer Traffic Config", {
     
     service_type: function (frm, cdt, cdn) {
         let row = locals[cdt][cdn];
-        if(row.service_type){
-            // First validate rent_type restriction before allowing new fetch
-            // let existing_rent_types = frm.doc.custom_customer_traffic_config
-            //     .filter(r => r.name !== row.name && r.rent_type)
-            //     .map(r => r.rent_type);
-
-            // We'll do this after item fetch to have rent_type
+        if(row.service_type){        
             frappe.call({
                 method: "contiship_erp.custom.traffic_custom.fetch_item_data",
                 args: {
@@ -26,8 +20,6 @@ frappe.ui.form.on("Customer Traffic Config", {
                 },
                 callback: function (r) {
                     if (r.message) {
-                       
-
                         // Set values if validation passes
                         frappe.model.set_value(cdt, cdn, "rent_type", r.message.rent_type);
                         frappe.model.set_value(cdt, cdn, "square_feet_size", r.message.square_feet_size);
@@ -35,6 +27,7 @@ frappe.ui.form.on("Customer Traffic Config", {
                         frappe.model.set_value(cdt, cdn, "add_on_type", r.message.add_on_type);
                         frappe.model.set_value(cdt, cdn, "add_on_service", r.message.add_on_service);
                         frappe.model.set_value(cdt, cdn, "container_feet", r.message.container_feet);
+                        frappe.model.set_value(cdt, cdn, "lcl_type", r.message.lcl_type);
                         frappe.model.set_value(cdt, cdn, "minimum_commitmentnoofdays", r.message.min_commitment);
                         frappe.model.set_value(cdt, cdn, "rate", r.message.rate);
                         frm.refresh_field("custom_customer_traffic_config");

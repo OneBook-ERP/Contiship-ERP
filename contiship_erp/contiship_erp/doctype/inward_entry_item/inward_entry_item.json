@@ -17,7 +17,18 @@
   "weight",
   "vehicle_no",
   "grade_item",
-  "grade"
+  "grade",
+  "section_break_smun",
+  "heading",
+  "section_break_smqh",
+  "rate",
+  "enable_75_rule",
+  "after_75_discounted_rate",
+  "service_type",
+  "column_break_hbpj",
+  "minimum_commitmentnoofdays",
+  "enable_875_rule",
+  "after_875discounted_rate"
  ],
  "fields": [
   {
@@ -60,7 +71,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Container Size",
-   "options": "\n20\n40\nTata Ac\nEicher\nLorry\nTaurus1\nTaurus2",
+   "options": "\n20\n40\nLCL",
    "reqd": 1
   },
   {
@@ -103,13 +114,75 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Crossing Item"
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "label": "Rate"
+  },
+  {
+   "fieldname": "section_break_smqh",
+   "fieldtype": "Section Break",
+   "label": "Tariff"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_75_rule",
+   "fieldtype": "Check",
+   "label": "Enable 75% Rule"
+  },
+  {
+   "depends_on": "eval:doc.enable_75_rule",
+   "fieldname": "after_75_discounted_rate",
+   "fieldtype": "Currency",
+   "label": "After 75% (Discounted Rate)",
+   "mandatory_depends_on": "eval:doc.enable_75_rule"
+  },
+  {
+   "fieldname": "column_break_hbpj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_875_rule",
+   "fieldtype": "Check",
+   "label": "Enable 87.5% Rule"
+  },
+  {
+   "depends_on": "eval:doc.enable_875_rule",
+   "fieldname": "after_875discounted_rate",
+   "fieldtype": "Currency",
+   "label": "After 87.5%(Discounted Rate)",
+   "mandatory_depends_on": "eval:doc.enable_875_rule"
+  },
+  {
+   "default": "0",
+   "fieldname": "minimum_commitmentnoofdays",
+   "fieldtype": "Int",
+   "label": "Minimum Commitment(No.of.Days)"
+  },
+  {
+   "fieldname": "section_break_smun",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "heading",
+   "fieldtype": "Heading",
+   "label": "\"Note: The tariff configuration shown below will be applied in the final invoice.\""
+  },
+  {
+   "fieldname": "service_type",
+   "fieldtype": "Link",
+   "label": "Service",
+   "link_filters": "[[\"Item\",\"custom_rent_type\",\"is\",\"set\"]]",
+   "options": "Item"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-07 17:30:26.011555",
+ "modified": "2025-09-06 14:49:36.530077",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry Item",

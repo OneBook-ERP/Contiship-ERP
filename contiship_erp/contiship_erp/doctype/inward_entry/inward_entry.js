@@ -52,39 +52,47 @@ frappe.ui.form.on('Inward Entry', {
                 ]
             };
         };
-    },
-    // boeinvoice_no(frm){
-    //     frm.doc.consignment = frm.doc.boeinvoice_no
-    // }
+    },    
 });
 
-// frappe.ui.form.on('Inward Entry Item', {
-//     qty: function(frm) {
-//         update_addon_qty_total(frm);
-//     },
-//     inward_entry_items_add: function(frm) {
-//         update_addon_qty_total(frm);
-//     },
-//     inward_entry_items_remove: function(frm) {
-//         update_addon_qty_total(frm);
-//     }
-// });
+frappe.ui.form.on('Inward Entry Item', {
+    onload(frm, cdt, cdn) {
+        if (!frm.doc.customer) {
+            frappe.throw("Please select a customer.");
+        }
+    },
 
-// function update_addon_qty_total(frm) {
-//     const line_item_count = frm.doc.inward_entry_items?.length || 0;
+    container_size(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        console.log(row.container_size)
+        if (!row.container_size) return;
+        console.log('ss')
+        console.log("Customer Tariff Config:", frm.doc.customer_tariff_config);
+        console.log("Row Container Size:", row.container_size);
 
-//     frm.doc.add_on_services_inward?.forEach(row => {
-//         frappe.model.set_value(row.doctype, row.name, 'qty', line_item_count);
-//     });
-// }
+        let tariff = (frm.doc.customer_tariff_config || []).find(t =>
+            (t.container_feet && t.container_feet.toString() === row.container_size.toString()) ||
+            (t.lcl_type && t.lcl_type.toString() === row.container_size.toString())
+        );
+        console.log(tariff)
 
+        if (tariff) {
+            frappe.model.set_value(cdt, cdn, 'rate', tariff.rate || 0);
+            frappe.model.set_value(cdt, cdn, 'service_type', tariff.service_type || 0);
+            frappe.model.set_value(cdt, cdn, 'enable_75_rule', tariff.enable_75_rule || 0);
+            frappe.model.set_value(cdt, cdn, 'enable_875_rule', tariff.enable_875_rule || 0);
+            frappe.model.set_value(cdt, cdn, 'after_75_discounted_rate', tariff.after_75_discounted_rate || 0);
+            frappe.model.set_value(cdt, cdn, 'after_875discounted_rate', tariff.after_875discounted_rate || 0);
+            frappe.model.set_value(cdt, cdn, 'rentminimum_commitmentnoofdays_type', tariff.minimum_commitmentnoofdays || 0);
+            frm.refresh_field("inward_entry_items");
+        }
+    }
+});
 
 frappe.ui.form.on('Add On Services', {
     add_on_item(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
-
         if (!row.add_on_item) return;
-
         frappe.call({
             method: 'contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.get_items_rate',
             args: {
@@ -93,15 +101,12 @@ frappe.ui.form.on('Add On Services', {
             },
             callback: function(r) {
                 if (r.message) {
-                    frappe.model.set_value(cdt, cdn, 'rate', r.message.price || 0);
-                    // update_addon_qty_total(frm)                    
+                    frappe.model.set_value(cdt, cdn, 'rate', r.message.price || 0);                                     
                 }
             }
         });
     }
 });
-
-
 
 frappe.ui.form.on('Inward Entry', 'container', function(frm, cdt, cdn) {
     
@@ -137,17 +142,10 @@ function get_arrival_date(frm){
     })
 }
 
-frappe.ui.form.on("Customer Traffic Config", {
-    
+frappe.ui.form.on("Customer Traffic Config", {    
     service_type: function (frm, cdt, cdn) {
         let row = locals[cdt][cdn];
         if(row.service_type){
-            // First validate rent_type restriction before allowing new fetch
-            // let existing_rent_types = frm.doc.customer_tariff_config
-            //     .filter(r => r.name !== row.name && r.rent_type)
-            //     .map(r => r.rent_type);
-
-            // We'll do this after item fetch to have rent_type
             frappe.call({
                 method: "contiship_erp.custom.traffic_custom.fetch_item_data",
                 args: {
@@ -155,24 +153,13 @@ frappe.ui.form.on("Customer Traffic Config", {
                 },
                 callback: function (r) {
                     if (r.message) {
-                        // const current_rent_type = r.message.rent_type;
-
-                        // if (
-                        //     (existing_rent_types.includes("Container Based") && current_rent_type === "Sqft Based") ||
-                        //     (existing_rent_types.includes("Sqft Based") && current_rent_type === "Container Based")
-                        // ) {
-                        //     frappe.msgprint("You cannot add both <b>'Container Based'</b> and <b>'Sqft Based'</b> rent types in the same customer.");
-                        //     frappe.model.set_value(cdt, cdn, "service_type", "");
-                        //     return;
-                        // }
-
-                        // Set values if validation passes
                         frappe.model.set_value(cdt, cdn, "rent_type", r.message.rent_type);
                         frappe.model.set_value(cdt, cdn, "square_feet_size", r.message.square_feet_size);
                         frappe.model.set_value(cdt, cdn, "additional_sqft_size", r.message.additional_sqft_size);
                         frappe.model.set_value(cdt, cdn, "add_on_type", r.message.add_on_type);
                         frappe.model.set_value(cdt, cdn, "add_on_service", r.message.add_on_service);
                         frappe.model.set_value(cdt, cdn, "container_feet", r.message.container_feet);
+                        frappe.model.set_value(cdt, cdn, "lcl_type", r.message.lcl_type);
                         frappe.model.set_value(cdt, cdn, "minimum_commitmentnoofdays", r.message.min_commitment);
                         frappe.model.set_value(cdt, cdn, "rate", r.message.rate);
                         frm.refresh_field("customer_tariff_config");
@@ -180,6 +167,48 @@ frappe.ui.form.on("Customer Traffic Config", {
                 }
             });
         }
+    },
+    rate(frm, cdt, cdn) {
+        reapply_tariffs_to_containers(frm, cdt, cdn);
+    },
+    enable_75_rule(frm, cdt, cdn) {
+        reapply_tariffs_to_containers(frm, cdt, cdn);
+    },   
+    enable_875_rule(frm, cdt, cdn) {
+        reapply_tariffs_to_containers(frm, cdt, cdn);
+    },
+    after_875_discounted_rate(frm, cdt, cdn) {
+        reapply_tariffs_to_containers(frm, cdt, cdn);
+    },
+    after_75_discounted_rate(frm, cdt, cdn) {
+        reapply_tariffs_to_containers(frm, cdt, cdn);
+    },
+    minimum_commitmentnoofdays(frm, cdt, cdn) {
+        reapply_tariffs_to_containers(frm, cdt, cdn);
     }
 });
+
+
+function reapply_tariffs_to_containers(frm, cdt, cdn) {
+    console.log("Reapplying tariffs to containers...");
+    (frm.doc.inward_entry_items || []).forEach(row => {
+        if (row.container_size) {
+            let tariff = (frm.doc.customer_tariff_config || []).find(t =>
+                (t.container_feet && t.container_feet.toString() === row.container_size.toString()) ||
+                (t.lcl_type && t.lcl_type.toString() === row.container_size.toString())
+            );           
+
+            if (tariff) {
+                frappe.model.set_value(row.doctype, row.name, 'rate', tariff.rate || 0);
+                frappe.model.set_value(row.doctype, row.name, 'service_type', tariff.service_type || 0);
+                frappe.model.set_value(row.doctype, row.name, 'enable_75_rule', tariff.enable_75_rule || 0);
+                frappe.model.set_value(row.doctype, row.name, 'enable_875_rule', tariff.enable_875_rule || 0);
+                frappe.model.set_value(row.doctype, row.name, 'after_75_discounted_rate', tariff.after_75_discounted_rate || 0);
+                frappe.model.set_value(row.doctype, row.name, 'after_875discounted_rate', tariff.after_875discounted_rate || 0);
+                frappe.model.set_value(row.doctype, row.name, 'rentminimum_commitmentnoofdays_type', tariff.minimum_commitmentnoofdays || 0);
+            }
+        }
+    });
+    frm.refresh_field("inward_entry_items");
+}
 

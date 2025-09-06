@@ -383,6 +383,7 @@ def create_container_sales_invoice(outward_entry):
             container = item.name
             container_size = item.container_size
             inward_qty = item.qty
+
             month_invoice_details = get_monthly_invoice(container)
             if month_invoice_details:
                 if month_invoice_details["custom_container_status"] == "Completed":
@@ -400,7 +401,7 @@ def create_container_sales_invoice(outward_entry):
                 )
             ), None)
 
-            if not tariff:
+            if not tariff and not item.rate:
                 frappe.log_error(f"No matching tariff for {container_size}ft", f"Tariff Error for {container}")
                 continue
 
@@ -414,11 +415,11 @@ def create_container_sales_invoice(outward_entry):
             )
             outward_items = []
 
-            for item in items:
-                billed = frappe.db.get_value("Outward Entry", item["parent"], "billed")
+            for oitem in items:
+                billed = frappe.db.get_value("Outward Entry", oitem["parent"], "billed")
                 if not billed:
-                    item["date"] = frappe.db.get_value("Outward Entry", item["parent"], "date")
-                    outward_items.append(item)
+                    oitem["date"] = frappe.db.get_value("Outward Entry", oitem["parent"], "date")
+                    outward_items.append(oitem)
            
             if not outward_items:
                 continue
@@ -427,7 +428,7 @@ def create_container_sales_invoice(outward_entry):
             default_company = frappe.defaults.get_user_default("Company")
             income_account = frappe.get_value("Company", default_company, "default_income_account")
 
-            if tariff.enable_875_rule or tariff.enable_75_rule:                           
+            if item.enable_875_rule or item.enable_75_rule:                           
                 outward_items = sorted(outward_items, key=lambda x: getdate(x["date"]))
 
                 dispatched_total = 0
@@ -439,10 +440,10 @@ def create_container_sales_invoice(outward_entry):
 
                 final_outward_date = max(getdate(r["date"]) for r in outward_items)
                 duration_days = (final_outward_date - arrival_date).days + 1
-                commitment_days = tariff.minimum_commitmentnoofdays if not month_invoice_details else 0
+                commitment_days = item.minimum_commitmentnoofdays if not month_invoice_details else 0
                 effective_days = max(duration_days, commitment_days)                                
-                if not month_invoice_details and tariff.minimum_commitmentnoofdays:
-                    final_invoice_date = max(final_outward_date, arrival_date + timedelta(days=tariff.minimum_commitmentnoofdays - 1))
+                if not month_invoice_details and item.minimum_commitmentnoofdays:
+                    final_invoice_date = max(final_outward_date, arrival_date + timedelta(days=item.minimum_commitmentnoofdays - 1))
                 else:
                     final_invoice_date = final_outward_date
 
@@ -453,14 +454,14 @@ def create_container_sales_invoice(outward_entry):
                     dispatched_total += row["qty"]
                     dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0
                     
-                    if tariff.enable_875_rule and dispatched_percent >= 87.5 and (duration_days>commitment_days):
-                        rate = tariff.after_875discounted_rate
+                    if item.enable_875_rule and dispatched_percent >= 87.5 and (duration_days>commitment_days):
+                        rate = item.after_875discounted_rate
                         slab_type = "87.5"
-                    elif tariff.enable_75_rule and dispatched_percent >= 75 and (duration_days>commitment_days):
-                        rate = tariff.after_75_discounted_rate
+                    elif item.enable_75_rule and dispatched_percent >= 75 and (duration_days>commitment_days):
+                        rate = item.after_75_discounted_rate
                         slab_type = "75"
                     else:
-                        rate = tariff.rate
+                        rate = item.rate
                         slab_type = "normal"
                     
                     if idx + 1 < len(outward_items):
@@ -479,7 +480,7 @@ def create_container_sales_invoice(outward_entry):
 
                     current_start_date = next_date + timedelta(days=1)
                
-                item_name = frappe.get_value("Item", tariff.service_type, "item_name")                
+                item_name = frappe.get_value("Item", item.service_type, "item_name")                
                 merged_slabs = []
                 for slab in slabs:
                     if not merged_slabs:
@@ -494,7 +495,7 @@ def create_container_sales_invoice(outward_entry):
                 for slab in merged_slabs:
                     slab_days = (slab["to_date"] - slab["from_date"]).days + 1
                     invoice_items.append({
-                        "item_code": tariff.service_type,
+                        "item_code": item.service_type,
                         "item_name": item_name,
                         "rate": slab["rate"],
                         "qty": slab_days,
@@ -503,39 +504,39 @@ def create_container_sales_invoice(outward_entry):
                         "income_account": income_account,
                         "custom_bill_from_date": slab["from_date"],
                         "custom_bill_to_date": slab["to_date"],
-                        "custom_container": container,
+                        "custom_container": container,                       
                         "custom_container_status": "Completed",
-                        "custom_invoice_type": "Immediate Billing",
+                        "custom_invoice_type": "Immediate Billing",                        
                     })
 
 
             
-            if not tariff.enable_875_rule and not tariff.enable_75_rule:
+            if not item.enable_875_rule and not item.enable_75_rule:
                 final_outward_date = max(getdate(r["date"]) for r in outward_items)
                 actual_last_outward_date = final_outward_date
                 duration_days = (actual_last_outward_date - arrival_date).days + 1
-                commitment_days = tariff.minimum_commitmentnoofdays if not month_invoice_details else 0
+                commitment_days = item.minimum_commitmentnoofdays if not month_invoice_details else 0
                 effective_days = max(duration_days, commitment_days) 
-                
-                if not month_invoice_details and tariff.minimum_commitmentnoofdays:
-                    final_invoice_date = max(actual_last_outward_date, arrival_date + timedelta(days=tariff.minimum_commitmentnoofdays - 1))
+
+                if not month_invoice_details and item.minimum_commitmentnoofdays:
+                    final_invoice_date = max(actual_last_outward_date, arrival_date + timedelta(days=item.minimum_commitmentnoofdays - 1))
                 else:
                     final_invoice_date = actual_last_outward_date
 
                 description = f"From {arrival_date.strftime('%d-%m-%Y')} to {final_invoice_date.strftime('%d-%m-%Y')}"
-                item_name = frappe.get_value("Item", tariff.service_type, "item_name")
+                item_name = frappe.get_value("Item", item.service_type, "item_name")
 
                 invoice_items.append({
-                    "item_code": tariff.service_type,
+                    "item_code": item.service_type,
                     "item_name": item_name,
-                    "rate": tariff.rate,
+                    "rate": item.rate,
                     "qty": effective_days,
                     "uom": tariff.uom or "Day",
                     "description": description,
                     "income_account": income_account,
                     "custom_bill_from_date": arrival_date,
                     "custom_bill_to_date": final_invoice_date,
-                    "custom_container": container,
+                    "custom_container": container,                    
                     "custom_container_status": "Completed",
                     "custom_invoice_type": "Immediate Billing",
                     
@@ -553,6 +554,7 @@ def create_container_sales_invoice(outward_entry):
         si.custom_reference_docname = inward.name
         si.custom_invoice_type = "Immediate Billing"
         si.custom_consignment = inward.boeinvoice_no
+        si.custom_inward_date = inward.arrival_date
         si.set("items", invoice_items)   
         si.insert()
 
