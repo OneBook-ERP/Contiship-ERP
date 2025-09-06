@@ -42,16 +42,7 @@ def fetch_item_data(service_type):
                 result["min_commitment"] = item.custom_container_min_commitment
         elif item.custom_rent_type == "LCL":
             result["rent_type"] = "LCL"
-            if item.custom_lcl_type == "Tata Ac":
-                result["container_feet"] = "Tata Ac"                
-            elif item.custom_lcl_type == "Eicher":
-                result["container_feet"] = "Eicher"
-            elif item.custom_lcl_type == "Lorry":
-                result["container_feet"] = "Lorry"
-            elif item.custom_lcl_type == "Trurus1":
-                result["container_feet"] = "Trurus1"
-            elif item.custom_lcl_type == "Trurus2":
-                result["container_feet"] = "Trurus2"
+            result["lcl_type"] = "LCL"           
                 
         elif item.custom_rent_type == "Sqft Based":
             result["rent_type"] = "Sqft Based"
@@ -357,28 +348,28 @@ def generate_monthly_container_invoices(now=None):
                 items = frappe.get_all("Outward Entry Items", filters={"container": container, "parenttype": "Outward Entry", "crossing_item": 0},fields=["qty", "parent"])
                 outward_items = []
 
-                for item in items:
-                    billed = frappe.db.get_value("Outward Entry", item["parent"], "billed")
+                for oitem in items:
+                    billed = frappe.db.get_value("Outward Entry", oitem["parent"], "billed")
                     if not billed:
-                        item["date"] = frappe.db.get_value("Outward Entry", item["parent"], "date")
-                        outward_items.append(item)                
+                        oitem["date"] = frappe.db.get_value("Outward Entry", oitem["parent"], "date")
+                        outward_items.append(oitem)              
                 
                 if not outward_items:
                     # No outward case
                     start_date = max(arrival_date, first_day)
                     end_date = end_of_month
                     duration = (end_date - start_date).days + 1
-                    if duration < tariff.minimum_commitmentnoofdays:
-                        effective_days = tariff.minimum_commitmentnoofdays
+                    if duration < (item.minimum_commitmentnoofdays or 0):
+                        effective_days = item.minimum_commitmentnoofdays or 0
                         end_date = start_date + timedelta(days=effective_days - 1)
                     else:
                         effective_days = duration               
 
-                    rate = tariff.rate         
+                    rate = item.rate         
 
-                    item_name = frappe.get_value("Item", tariff.service_type, "item_name")
+                    item_name = frappe.get_value("Item", item.service_type, "item_name")                   
                     invoice_items.append({
-                        "item_code": tariff.service_type,
+                        "item_code": item.service_type,
                         "item_name": item_name,
                         "qty": effective_days,
                         "rate": rate,
@@ -395,7 +386,7 @@ def generate_monthly_container_invoices(now=None):
                 else:
                     dispatched_total = 0
                     prev_end = None
-                    if tariff.enable_875_rule or tariff.enable_75_rule:                                
+                    if item.enable_875_rule or item.enable_75_rule:                                
                         outward_items = sorted(outward_items, key=lambda x: getdate(x["date"]))                      
                         
                         current_start_date = max(arrival_date if not prev_end else prev_end + timedelta(days=1), first_day)
@@ -403,11 +394,11 @@ def generate_monthly_container_invoices(now=None):
 
                         final_outward_date = max(getdate(r["date"]) for r in outward_items)                                                       
                         final_invoice_date = min(
-                            max(final_outward_date, arrival_date + timedelta(days=tariff.minimum_commitmentnoofdays - 1)),
+                            max(final_outward_date, arrival_date + timedelta(days=(item.minimum_commitmentnoofdays or 0) - 1)),
                             end_of_month
                         )
                         duration_days = (final_invoice_date - arrival_date).days + 1
-                        effective_days = max(duration_days, tariff.minimum_commitmentnoofdays)
+                        effective_days = max(duration_days, (item.minimum_commitmentnoofdays or 0))
 
                         for idx, row in enumerate(outward_items):
                             current_date = getdate(row["date"])
@@ -417,14 +408,14 @@ def generate_monthly_container_invoices(now=None):
                             dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0
 
                             
-                            if tariff.enable_875_rule and dispatched_percent >= 87.5:
-                                rate = tariff.after_875discounted_rate
+                            if item.enable_875_rule and dispatched_percent >= 87.5:
+                                rate = item.after_875discounted_rate
                                 slab_type = "87.5"
-                            elif tariff.enable_75_rule and dispatched_percent >= 75:
-                                rate = tariff.after_75_discounted_rate
+                            elif item.enable_75_rule and dispatched_percent >= 75:
+                                rate = item.after_75_discounted_rate
                                 slab_type = "75"
                             else:
-                                rate = tariff.rate
+                                rate = item.rate
                                 slab_type = "normal"
                             
                             if idx + 1 < len(outward_items):
@@ -447,7 +438,7 @@ def generate_monthly_container_invoices(now=None):
                             outward.billed = 1
                             outward.save()
                     
-                        item_name = frappe.get_value("Item", tariff.service_type, "item_name")
+                        item_name = frappe.get_value("Item", item.service_type, "item_name")
 
                         merged_slabs = []
                         for slab in slabs:
@@ -465,7 +456,7 @@ def generate_monthly_container_invoices(now=None):
                         for slab in merged_slabs:
                             slab_days = (slab["to_date"] - slab["from_date"]).days + 1
                             invoice_items.append({
-                                "item_code": tariff.service_type,
+                                "item_code": item.service_type,
                                 "item_name": item_name,
                                 "rate": slab["rate"],
                                 "qty": slab_days,
@@ -482,26 +473,25 @@ def generate_monthly_container_invoices(now=None):
                             all_dates.extend([slab['from_date'], slab['to_date']])
                             prev_end = slab['to_date'] 
 
-                    if not tariff.enable_875_rule and not tariff.enable_75_rule:
+                    if not item.enable_875_rule and not item.enable_75_rule:
                         final_outward_date = max(getdate(r["date"]) for r in outward_items)
                         dispatched_total = sum(r["qty"] for r in outward_items if r.get("qty"))
                         actual_last_outward_date = final_outward_date
                     
-                        if (final_outward_date - arrival_date).days < tariff.minimum_commitmentnoofdays:
-                            display_last_outward_date = arrival_date + timedelta(days=tariff.minimum_commitmentnoofdays - 1)
+                        if (final_outward_date - arrival_date).days < (item.minimum_commitmentnoofdays or 0):
+                            display_last_outward_date = arrival_date + timedelta(days=(item.minimum_commitmentnoofdays or 0) - 1)
                         else:
                             display_last_outward_date = final_outward_date
 
                         duration_days = (actual_last_outward_date - arrival_date).days + 1
-                        effective_days = max(duration_days, tariff.minimum_commitmentnoofdays)
+                        effective_days = max(duration_days, (item.minimum_commitmentnoofdays or 0))
 
                         description = f"From {arrival_date.strftime('%d-%m-%Y')} to {display_last_outward_date.strftime('%d-%m-%Y')}"
-                        item_name = frappe.get_value("Item", tariff.service_type, "item_name")
-
+                        item_name = frappe.get_value("Item", item.service_type, "item_name")
                         invoice_items.append({
-                            "item_code": tariff.service_type,
+                            "item_code": item.service_type,
                             "item_name": item_name,
-                            "rate": tariff.rate,
+                            "rate": item.rate,
                             "qty": effective_days,
                             "uom": tariff.uom or "Day",
                             "description": description,
@@ -525,10 +515,10 @@ def generate_monthly_container_invoices(now=None):
                         duration = (end_date - start_date).days + 1
 
                         if duration > 0:
-                            rate = tariff.rate
-                            item_name = frappe.get_value("Item", tariff.service_type, "item_name")
+                            rate = item.rate
+                            item_name = frappe.get_value("Item", item.service_type, "item_name")                            
                             invoice_items.append({
-                                "item_code": tariff.service_type,
+                                "item_code": item.service_type,
                                 "item_name": item_name,
                                 "qty": duration,
                                 "rate": rate,
@@ -552,6 +542,7 @@ def generate_monthly_container_invoices(now=None):
                 si.custom_reference_docname = inward.name
                 si.custom_invoice_type = "Monthly Billing"
                 si.custom_consignment = inward.boeinvoice_no
+                si.custom_inward_date = inward.arrival_date
                 si.set("items", invoice_items)
                 si.custom_bill_from_date = min(all_dates) if all_dates else first_day
                 si.custom_bill_to_date = max(all_dates) if all_dates else end_of_month

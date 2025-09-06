@@ -22,15 +22,15 @@ class InwardEntry(Document):
 
         else:
             for items in self.inward_entry_items:
-                if items.container_size == "20":
+                if items.container_size == "20" and not items.rate:
                     if not any(t.rent_type == "Container Based" and t.container_feet == 20 for t in self.customer_tariff_config):
                         frappe.throw("20 Ft Container Based tariff is not set for this Inward Entry tariff.")
-                elif items.container_size == "40":
+                elif items.container_size == "40" and not items.rate:
                     if not any(t.rent_type == "Container Based" and t.container_feet == 40 for t in self.customer_tariff_config):
                         frappe.throw("40 Ft Container Based tariff is not set for this Inward Entry tariff.")
-                else:
-                    if not any(t.rent_type == "LCL" and t.lcl_type == items.container_size for t in self.customer_tariff_config):
-                        frappe.throw(f"{items.container_size} LCL Based tariff is not set for this Inward Entry tariff.")
+                elif items.container_size == "LCL" and not items.rate:
+                    if not any(t.rent_type == "LCL" for t in self.customer_tariff_config):
+                        frappe.throw("LCL Based tariff is not set for this Inward Entry tariff.")
 
                     
 
@@ -47,6 +47,7 @@ def create_sales_invoice(inward_entry):
     sales_invoice.custom_reference_docname = inward_entry.name
     sales_invoice.custom_invoice_type = "Add-on Billing"
     sales_invoice.custom_consignment = inward_entry.boeinvoice_no
+    sales_invoice.custom_inward_date = inward_entry.arrival_date
 
     for row in inward_entry.add_on_services_inward:
         if not row.add_on_item:
@@ -159,3 +160,5 @@ def get_items_rate(item,tariffs):
         "price": price_data.price_list_rate or 0
     }
 
+
+    
