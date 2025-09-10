@@ -108,7 +108,7 @@ def sales_invoice_on_submit(doc, method):
 
 
 
-def sales_invoice_after_insert(doc, method):
+def sales_invoice_after_insert(doc, method):    
     if doc.taxes_and_charges:
         taxes_template = frappe.get_doc("Sales Taxes and Charges Template", doc.taxes_and_charges)
 
