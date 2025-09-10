@@ -64,17 +64,12 @@ frappe.ui.form.on('Inward Entry Item', {
 
     container_size(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
-        console.log(row.container_size)
         if (!row.container_size) return;
-        console.log('ss')
-        console.log("Customer Tariff Config:", frm.doc.customer_tariff_config);
-        console.log("Row Container Size:", row.container_size);
 
         let tariff = (frm.doc.customer_tariff_config || []).find(t =>
             (t.container_feet && t.container_feet.toString() === row.container_size.toString()) ||
             (t.lcl_type && t.lcl_type.toString() === row.container_size.toString())
         );
-        console.log(tariff)
 
         if (tariff) {
             frappe.model.set_value(cdt, cdn, 'rate', tariff.rate || 0);
@@ -83,7 +78,7 @@ frappe.ui.form.on('Inward Entry Item', {
             frappe.model.set_value(cdt, cdn, 'enable_875_rule', tariff.enable_875_rule || 0);
             frappe.model.set_value(cdt, cdn, 'after_75_discounted_rate', tariff.after_75_discounted_rate || 0);
             frappe.model.set_value(cdt, cdn, 'after_875discounted_rate', tariff.after_875discounted_rate || 0);
-            frappe.model.set_value(cdt, cdn, 'rentminimum_commitmentnoofdays_type', tariff.minimum_commitmentnoofdays || 0);
+            frappe.model.set_value(cdt, cdn, 'minimum_commitmentnoofdays', tariff.minimum_commitmentnoofdays || 0);
             frm.refresh_field("inward_entry_items");
         }
     }
@@ -205,7 +200,7 @@ function reapply_tariffs_to_containers(frm, cdt, cdn) {
                 frappe.model.set_value(row.doctype, row.name, 'enable_875_rule', tariff.enable_875_rule || 0);
                 frappe.model.set_value(row.doctype, row.name, 'after_75_discounted_rate', tariff.after_75_discounted_rate || 0);
                 frappe.model.set_value(row.doctype, row.name, 'after_875discounted_rate', tariff.after_875discounted_rate || 0);
-                frappe.model.set_value(row.doctype, row.name, 'rentminimum_commitmentnoofdays_type', tariff.minimum_commitmentnoofdays || 0);
+                frappe.model.set_value(row.doctype, row.name, 'minimum_commitmentnoofdays', tariff.minimum_commitmentnoofdays || 0);
             }
         }
     });
