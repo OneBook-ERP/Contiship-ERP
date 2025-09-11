@@ -14,7 +14,6 @@
   "uom",
   "vehicle_no",
   "column_break_nqgr",
-  "cha_name",
   "consignee_name",
   "grade_item",
   "grade",
@@ -54,12 +53,6 @@
    "label": "Container Id",
    "options": "Inward Entry Item",
    "reqd": 1
-  },
-  {
-   "fetch_from": "consignment.cha_name",
-   "fieldname": "cha_name",
-   "fieldtype": "Data",
-   "label": "CHA Name"
   },
   {
    "default": "0",
@@ -110,7 +103,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-07 17:41:02.319028",
+ "modified": "2025-09-11 20:31:10.578045",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Outward Entry Items",

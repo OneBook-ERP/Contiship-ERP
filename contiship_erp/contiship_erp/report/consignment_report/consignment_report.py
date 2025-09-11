@@ -36,6 +36,14 @@ def get_data(filters):
             "to_date": filters["to_date"]
         })
 
+    elif filters.get("from_date"):
+        conditions += " AND ie.arrival_date >= %(from_date)s"
+        values.update({"from_date": filters["from_date"]})
+
+    elif filters.get("to_date"):
+        conditions += " AND ie.arrival_date <= %(to_date)s"
+        values.update({"to_date": filters["to_date"]})
+
     if filters.get("customer"):
         conditions += " AND ie.customer = %(customer)s"
         values["customer"] = filters["customer"]
@@ -67,8 +75,7 @@ def get_data(filters):
                 SELECT SUM(oed.qty)
                 FROM `tabOutward Entry Items` AS oed
                 JOIN `tabOutward Entry` AS oe ON oe.name = oed.parent
-                WHERE
-                    oe.docstatus = 1 AND
+                WHERE                    
                     oe.consignment = ie.name AND
                     oed.item = ied.item
             ), 0) AS UNSIGNED) AS outward_qty,
@@ -76,8 +83,7 @@ def get_data(filters):
                 SELECT SUM(oed.qty)
                 FROM `tabOutward Entry Items` AS oed
                 JOIN `tabOutward Entry` AS oe ON oe.name = oed.parent
-                WHERE
-                    oe.docstatus = 1 AND
+                WHERE                    
                     oe.consignment = ie.name AND
                     oed.item = ied.item
             ), 0)) AS UNSIGNED) AS available_qty,
@@ -86,8 +92,7 @@ def get_data(filters):
                 SELECT GROUP_CONCAT(CONCAT(oe.name, ' (', oed.qty, ')') ORDER BY oe.date DESC SEPARATOR ', ')
                 FROM `tabOutward Entry Items` AS oed
                 JOIN `tabOutward Entry` AS oe ON oe.name = oed.parent
-                WHERE
-                    oe.docstatus = 1 AND
+                WHERE                    
                     oe.consignment = ie.name AND
                     oed.item = ied.item
             ) AS outward_entry_id
@@ -100,5 +105,5 @@ def get_data(filters):
         GROUP BY
             ie.name, ied.item
         ORDER BY
-            ie.arrival_date DESC
+            ie.creation DESC
     """.format(conditions=conditions), values, as_dict=1)
