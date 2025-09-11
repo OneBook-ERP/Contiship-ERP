@@ -33,6 +33,14 @@ def get_data(filters):
 			"to_date": filters["to_date"]
 		})
 
+	elif filters.get("from_date"):
+		conditions += " AND ie.arrival_date >= %(from_date)s"
+		values.update({"from_date": filters["from_date"]})
+
+	elif filters.get("to_date"):
+		conditions += " AND ie.arrival_date <= %(to_date)s"
+		values.update({"to_date": filters["to_date"]})
+
 	if filters.get("customer"):
 		conditions += " AND ie.customer = %(customer)s"
 		values["customer"] = filters["customer"]
@@ -71,5 +79,5 @@ def get_data(filters):
 		WHERE
 			1=1 {conditions}
 		ORDER BY
-			ie.arrival_date DESC
+			ie.creation DESC
 	""".format(conditions=conditions), values, as_dict=1)
