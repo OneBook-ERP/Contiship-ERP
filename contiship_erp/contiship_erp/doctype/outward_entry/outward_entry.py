@@ -381,6 +381,7 @@ def create_container_sales_invoice(outward_entry):
 
         for item in inward.inward_entry_items:       
             container = item.name
+            container_name = item.container
             container_size = item.container_size
             inward_qty = item.qty
 
@@ -504,7 +505,8 @@ def create_container_sales_invoice(outward_entry):
                         "income_account": income_account,
                         "custom_bill_from_date": slab["from_date"],
                         "custom_bill_to_date": slab["to_date"],
-                        "custom_container": container,                       
+                        "custom_container": container,
+                        "custom_container_name": container_name,                      
                         "custom_container_status": "Completed",
                         "custom_invoice_type": "Immediate Billing",                        
                     })
@@ -536,7 +538,8 @@ def create_container_sales_invoice(outward_entry):
                     "income_account": income_account,
                     "custom_bill_from_date": arrival_date,
                     "custom_bill_to_date": final_invoice_date,
-                    "custom_container": container,                    
+                    "custom_container": container,
+                    "custom_container_name": container_name,
                     "custom_container_status": "Completed",
                     "custom_invoice_type": "Immediate Billing",
                     
@@ -552,7 +555,7 @@ def create_container_sales_invoice(outward_entry):
         si.posting_date = frappe.utils.nowdate()
         si.custom_reference_doctype = "Inward Entry"
         si.custom_reference_docname = inward.name
-        si.custom_invoice_type = "Immediate Billing"
+        si.custom_invoice_type = "Storage"
         si.custom_consignment = inward.boeinvoice_no
         si.custom_inward_date = inward.arrival_date
         si.set("items", invoice_items)   

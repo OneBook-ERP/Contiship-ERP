@@ -204,6 +204,7 @@ def create_monthly_standard_sqft_invoice(start=None):
         invoice.customer = customer
         invoice.posting_date = today
         invoice.due_date = today
+        invoice.custom_invoice_type = "Storage"
 
         for service in services:
             uom = service.uom or "Sqf"
@@ -266,6 +267,7 @@ def create_monthly_additional_sqft_invoice(end=None):
         invoice.customer = customer
         invoice.posting_date = today
         invoice.due_date = today
+        invoice.custom_invoice_type = "Storage"
 
         for service in services:
             uom = service.uom or "Sqf"
@@ -329,6 +331,7 @@ def generate_monthly_container_invoices(now=None):
                 if item.crossing_item:
                     continue
                 container = item.name
+                container_name = item.container
                 container_size = item.container_size
                 arrival_date = getdate(item.container_arrival_date)
                 inward_qty = item.qty
@@ -379,6 +382,7 @@ def generate_monthly_container_invoices(now=None):
                         "custom_bill_from_date":start_date,
                         "custom_bill_to_date": end_date,
                         "custom_container": container,
+                        "custom_container_name": container_name,
                         "custom_container_status": "Pending",
                         "custom_invoice_type": "Monthly Billing"                    
                     })
@@ -466,6 +470,7 @@ def generate_monthly_container_invoices(now=None):
                                 "custom_bill_from_date": slab["from_date"],
                                 "custom_bill_to_date": slab["to_date"],
                                 "custom_container": container,
+                                "custom_container_name": container_name,
                                 "custom_container_status": "Completed" if dispatched_total >= inward_qty else "Partial",
                                 "custom_invoice_type": "Monthly Billing",
                                 "custom_outward_qty": dispatched_total
@@ -499,6 +504,7 @@ def generate_monthly_container_invoices(now=None):
                             "custom_bill_from_date": arrival_date,
                             "custom_bill_to_date": display_last_outward_date,
                             "custom_container": container,
+                            "custom_container_name": container_name,
                             "custom_container_status": "Completed" if dispatched_total >= inward_qty else "Partial",
                             "custom_invoice_type": "Monthly Billing",
                             "custom_outward_qty": dispatched_total
@@ -528,6 +534,7 @@ def generate_monthly_container_invoices(now=None):
                                 "custom_bill_from_date": start_date,
                                 "custom_bill_to_date": end_date,
                                 "custom_container": container,
+                                "custom_container_name": container_name,
                                 "custom_container_status": "Partial",
                                 "custom_invoice_type": "Monthly Billing"
                             })
@@ -540,7 +547,7 @@ def generate_monthly_container_invoices(now=None):
                 si.posting_date = nowdate()
                 si.custom_reference_doctype = "Inward Entry"
                 si.custom_reference_docname = inward.name
-                si.custom_invoice_type = "Monthly Billing"
+                si.custom_invoice_type = "Storage"
                 si.custom_consignment = inward.boeinvoice_no
                 si.custom_inward_date = inward.arrival_date
                 si.set("items", invoice_items)

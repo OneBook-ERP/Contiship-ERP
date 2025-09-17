@@ -45,7 +45,7 @@ def create_sales_invoice(inward_entry):
     sales_invoice.customer = inward_entry.customer
     sales_invoice.custom_reference_doctype = "Inward Entry"
     sales_invoice.custom_reference_docname = inward_entry.name
-    sales_invoice.custom_invoice_type = "Add-on Billing"
+    sales_invoice.custom_invoice_type = "Handling"
     sales_invoice.custom_consignment = inward_entry.boeinvoice_no
     sales_invoice.custom_inward_date = inward_entry.arrival_date
 
