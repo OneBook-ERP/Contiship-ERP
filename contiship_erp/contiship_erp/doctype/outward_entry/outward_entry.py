@@ -346,15 +346,43 @@ def create_container_sales_invoice(outward_entry):
             frappe.error_log("No tariff configuration found.")
 
         containers_not_fully_outwarded = []
+        container_map = {}
         for item in inward.inward_entry_items:
-            if item.crossing_item:
-                continue
-            container = item.name
-            inward_qty = item.qty
+                container_name = item.container
+                if not container_name:
+                    continue
+                if item.crossing_item:
+                    continue                
+                if container_name not in container_map:
+                    container_map[container_name] = {
+                        "items": [item],
+                        "total_qty": item.qty,
+                        "container_size": item.container_size,
+                        "arrival_date": getdate(item.container_arrival_date),
+                        "container_name": item.container,
+                        "name": item.name
+                    }
+                else:
+                    container_map[container_name]["items"].append(item)
+                    container_map[container_name]["total_qty"] += item.qty
+
+        for container_name, data in container_map.items():
+            items_list = data["items"]
+            item = items_list[0]                             
+            inward_qty = data["total_qty"]           
+            container = data["name"]
+            container_name = data["container_name"]
+           
+
+        # for item in inward.inward_entry_items:
+        #     if item.crossing_item:
+        #         continue
+        #     container = item.name            
+        #     inward_qty = item.qty
 
             outward_items = frappe.get_all("Outward Entry Items",
                 filters={
-                    "container": container,
+                    "container_name": container_name,
                     "parenttype": "Outward Entry",
                     "docstatus": 1,
                     "crossing_item": 0,
@@ -363,12 +391,29 @@ def create_container_sales_invoice(outward_entry):
                 fields=["qty"]
             )
 
+            # outward_items = frappe.get_all("Outward Entry Items",
+            #     filters={
+            #         "container": container,
+            #         "parenttype": "Outward Entry",
+            #         "docstatus": 1,
+            #         "crossing_item": 0,
+            #         "parent": ["!=", outward.name]                    
+            #     },
+            #     fields=["qty"]
+            # )
+
             total_outward_qty = sum(out.qty for out in outward_items)
+            frappe.log_error(f"total_outward_qty: {total_outward_qty}")
+            frappe.log_error(f"inward_qty: {inward_qty}")
             
+            # if outward:                
+            #     for row in outward.items:
+            #         if row.container == container:
+            #             total_outward_qty += row.qty 
             if outward:                
                 for row in outward.items:
-                    if row.container == container:
-                        total_outward_qty += row.qty            
+                    if row.container_name == container_name:
+                        total_outward_qty += row.qty             
 
             if total_outward_qty < inward_qty:
                 containers_not_fully_outwarded.append(container)                
@@ -379,11 +424,20 @@ def create_container_sales_invoice(outward_entry):
 
         invoice_items = []
 
-        for item in inward.inward_entry_items:       
-            container = item.name
-            container_name = item.container
-            container_size = item.container_size
-            inward_qty = item.qty
+        for container_name, data in container_map.items():
+            items_list = data["items"]
+            item = items_list[0]                             
+            inward_qty = data["total_qty"]
+            container_name = data["container_name"]
+            container_size = data["container_size"]            
+            container = data["name"]
+            frappe.log_error(f"inward_qty: {inward_qty}")
+
+        # for item in inward.inward_entry_items:       
+        #     container = item.name
+        #     container_name = item.container
+        #     container_size = item.container_size
+        #     inward_qty = item.qty
 
             month_invoice_details = get_monthly_invoice(container)
             if month_invoice_details:
@@ -408,12 +462,21 @@ def create_container_sales_invoice(outward_entry):
 
             items = frappe.get_all("Outward Entry Items",
                 filters={
-                    "container": container,
+                    "container_name": container_name,
                     "parenttype": "Outward Entry",
                     "crossing_item": 0,                                 
                 },
                 fields=["qty", "parent"]
             )
+
+            # items = frappe.get_all("Outward Entry Items",
+            #     filters={
+            #         "container": container,
+            #         "parenttype": "Outward Entry",
+            #         "crossing_item": 0,                                 
+            #     },
+            #     fields=["qty", "parent"]
+            # )
             outward_items = []
 
             for oitem in items:

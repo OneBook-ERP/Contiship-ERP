@@ -120,8 +120,7 @@ def sales_invoice_after_insert(doc, method):
             if frappe.db.exists("GST Settings"):
                 gst_settings = frappe.get_doc("GST Settings")
                 output_accounts = None
-                for acc in gst_settings.gst_accounts:
-                    frappe.log_error("GST Accounts", acc.as_dict())
+                for acc in gst_settings.gst_accounts:                    
                     if acc.account_type == "Output":
                         output_accounts = acc
                         break
@@ -324,17 +323,47 @@ def generate_monthly_container_invoices(now=None):
             inward = frappe.get_doc("Inward Entry", inward.name)
             invoice_items = []
             all_dates = []
+            container_map = {}
             default_company = frappe.defaults.get_user_default("Company")
             income_account = frappe.get_value("Company", default_company, "default_income_account")
 
             for item in inward.inward_entry_items:
-                if item.crossing_item:
-                    continue
-                container = item.name
                 container_name = item.container
-                container_size = item.container_size
-                arrival_date = getdate(item.container_arrival_date)
-                inward_qty = item.qty
+                if not container_name:
+                    continue
+                if item.crossing_item:
+                    continue                
+                if container_name not in container_map:
+                    container_map[container_name] = {
+                        "items": [item],
+                        "total_qty": item.qty,
+                        "container_size": item.container_size,
+                        "arrival_date": getdate(item.container_arrival_date),
+                        "container_name": item.container,
+                        "name": item.name
+                    }
+                else:
+                    container_map[container_name]["items"].append(item)
+                    container_map[container_name]["total_qty"] += item.qty
+
+            for container_name, data in container_map.items():
+                items_list = data["items"]
+                item = items_list[0]                             
+                inward_qty = data["total_qty"]
+                container_name = data["container_name"]
+                container_size = data["container_size"]
+                arrival_date = data["arrival_date"]
+                container = data["name"]
+                frappe.log_error(f"inward_qty: {inward_qty}")
+
+            # for item in inward.inward_entry_items:
+               
+               
+            #     container = item.name
+            #     container_name = item.container
+            #     container_size = item.container_size
+            #     arrival_date = getdate(item.container_arrival_date)
+            #     inward_qty = item.qty
 
                 tariffs = inward.customer_tariff_config or frappe.get_doc("Customer", inward.customer).custom_customer_traffic_config
                 tariff = next((
@@ -348,7 +377,9 @@ def generate_monthly_container_invoices(now=None):
                 if not tariff:
                     continue
 
-                items = frappe.get_all("Outward Entry Items", filters={"container": container, "parenttype": "Outward Entry", "crossing_item": 0},fields=["qty", "parent"])
+                # items = frappe.get_all("Outward Entry Items", filters={"container": container, "parenttype": "Outward Entry", "crossing_item": 0},fields=["qty", "parent"])
+
+                items = frappe.get_all("Outward Entry Items", filters={"container_name": container_name, "parenttype": "Outward Entry", "crossing_item": 0},fields=["qty", "parent"])
                 outward_items = []
 
                 for oitem in items:
@@ -434,7 +465,7 @@ def generate_monthly_container_invoices(now=None):
                                 "from_date": current_start_date,
                                 "to_date": next_date,
                                 "rate": rate,
-                                "slab_type": slab_type
+                                "slab_type": slab_type,                                
                             })
 
                             current_start_date = next_date + timedelta(days=1)
@@ -521,7 +552,14 @@ def generate_monthly_container_invoices(now=None):
                         duration = (end_date - start_date).days + 1
 
                         if duration > 0:
-                            rate = item.rate
+                            dispatched_percent = (dispatched_total / inward_qty) * 100 if inward_qty else 0
+
+                            if item.enable_875_rule and dispatched_percent >= 87.5:
+                                rate = item.after_875discounted_rate
+                            elif item.enable_75_rule and dispatched_percent >= 75:
+                                rate = item.after_75_discounted_rate
+                            else:
+                                rate = item.rate
                             item_name = frappe.get_value("Item", item.service_type, "item_name")                            
                             invoice_items.append({
                                 "item_code": item.service_type,
@@ -529,7 +567,7 @@ def generate_monthly_container_invoices(now=None):
                                 "qty": duration,
                                 "rate": rate,
                                 "uom": tariff.uom or "Day",
-                                "description": f"From {start_date.strftime('%d-%m-%Y')} to {end_date.strftime('%d-%m-%Y')} (Post last outward)",
+                                "description": f"From {start_date.strftime('%d-%m-%Y')} to {end_date.strftime('%d-%m-%Y')}",
                                 "income_account": income_account,
                                 "custom_bill_from_date": start_date,
                                 "custom_bill_to_date": end_date,
@@ -539,7 +577,7 @@ def generate_monthly_container_invoices(now=None):
                                 "custom_invoice_type": "Monthly Billing"
                             })
                             all_dates.extend([start_date, end_date])
-
+            
 
             if invoice_items:
                 si = frappe.new_doc("Sales Invoice")

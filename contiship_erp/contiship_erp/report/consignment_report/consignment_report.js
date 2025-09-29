@@ -9,26 +9,7 @@ frappe.query_reports["Consignment Report"] = {
 			fieldtype: "Link",
 			options: "Customer",
 			width: 150
-		},		
-		{
-			fieldname: "consignment",
-			label: "Consignment",
-			fieldtype: "Link",
-			options: "Inward Entry",
-			get_query: () => {
-				let customer = frappe.query_report.get_filter_value("customer");
-				let filters = {};
-
-				if (customer) {
-					filters.customer = customer;
-				}
-
-				return {
-					filters: filters
-				};
-			},
-			width: 150
-		},				
+		},					
 		{
 			fieldname: "item",
 			label: "Item",
