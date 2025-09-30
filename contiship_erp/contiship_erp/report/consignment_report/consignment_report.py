@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.utils import formatdate
 
 def execute(filters=None):
     columns = get_columns()
@@ -110,18 +111,20 @@ def get_data(filters):
             ie.name DESC
     """, values, as_dict=1)
 
-    # Make Outward Entry clickable
     for row in rows:
         if row.get("outward_entry_id"):
-            links = []
+            entries = []
             for entry in row["outward_entry_id"].split(", "):
-                entry_id = entry.split(" ")[0]              
-                links.append(f'<a href="javascript:void(0)" onclick="frappe.set_route(\'Form\', \'Outward Entry\', \'{entry_id}\')">{entry}</a>')
-            row["outward_entry_id"] = ", ".join(links)
+                entry_id = entry.split(" ")[0]
+                oe_date = frappe.db.get_value("Outward Entry", entry_id, "date")
+                if oe_date:
+                    oe_date = formatdate(oe_date)
+                qty = entry.split("(")[-1].replace(")", "")
+                entries.append(f"{oe_date} ({qty})")
+            row["outward_entry_id"] = ", ".join(entries)
         else:
             row["outward_entry_id"] = ""
 
-    # Make Sales Invoice clickable
     for row in rows:
         if row.get("sales_invoice"):
             links = []
