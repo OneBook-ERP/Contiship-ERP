@@ -334,6 +334,11 @@ def get_inward_html_table(customer):
 @frappe.whitelist()
 def create_container_sales_invoice(outward_entry):
     try:
+        if not frappe.db.exists("UOM", {"name": "Day"}):
+            frappe.get_doc({
+                "doctype": "UOM",               
+                "uom_name": "Day",                
+            }).insert(ignore_permissions=True)
         outward = frappe.get_doc("Outward Entry", outward_entry)
         inward = frappe.get_doc("Inward Entry", outward.consignment)
         if inward.service_type == "Sqft Based":
@@ -388,7 +393,8 @@ def create_container_sales_invoice(outward_entry):
                     "crossing_item": 0,
                     "parent": ["!=", outward.name]                    
                 },
-                fields=["qty"]
+                fields=["qty"],
+                order_by="creation ASC"
             )
 
             # outward_items = frappe.get_all("Outward Entry Items",
@@ -466,7 +472,8 @@ def create_container_sales_invoice(outward_entry):
                     "parenttype": "Outward Entry",
                     "crossing_item": 0,                                 
                 },
-                fields=["qty", "parent"]
+                fields=["qty", "parent"],
+                order_by="creation ASC"
             )
 
             # items = frappe.get_all("Outward Entry Items",
@@ -563,7 +570,7 @@ def create_container_sales_invoice(outward_entry):
                         "item_name": item_name,
                         "rate": slab["rate"],
                         "qty": slab_days,
-                        "uom": tariff.uom or "Day",
+                        "uom": "Day",
                         "description": f"From {slab['from_date'].strftime('%d-%m-%Y')} to {slab['to_date'].strftime('%d-%m-%Y')}",
                         "income_account": income_account,
                         "custom_bill_from_date": slab["from_date"],
@@ -596,7 +603,7 @@ def create_container_sales_invoice(outward_entry):
                     "item_name": item_name,
                     "rate": item.rate,
                     "qty": effective_days,
-                    "uom": tariff.uom or "Day",
+                    "uom": "Day",
                     "description": description,
                     "income_account": income_account,
                     "custom_bill_from_date": arrival_date,
