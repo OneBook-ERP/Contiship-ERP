@@ -291,7 +291,12 @@ def create_monthly_additional_sqft_invoice(end=None):
 
 @frappe.whitelist()
 def generate_monthly_container_invoices(now=None):
-    try:       
+    try:
+        if not frappe.db.exists("UOM", {"name": "Day"}):
+            frappe.get_doc({
+                "doctype": "UOM",               
+                "uom_name": "Day",                
+            }).insert(ignore_permissions=True)
         today = getdate(nowdate())
         year = today.year
         month = today.month
@@ -379,7 +384,7 @@ def generate_monthly_container_invoices(now=None):
 
                 # items = frappe.get_all("Outward Entry Items", filters={"container": container, "parenttype": "Outward Entry", "crossing_item": 0},fields=["qty", "parent"])
 
-                items = frappe.get_all("Outward Entry Items", filters={"container_name": container_name, "parenttype": "Outward Entry", "crossing_item": 0},fields=["qty", "parent"])
+                items = frappe.get_all("Outward Entry Items", filters={"container_name": container_name, "parenttype": "Outward Entry", "crossing_item": 0},fields=["qty", "parent"], order_by="creation ASC")
                 outward_items = []
 
                 for oitem in items:
@@ -407,7 +412,7 @@ def generate_monthly_container_invoices(now=None):
                         "item_name": item_name,
                         "qty": effective_days,
                         "rate": rate,
-                        "uom": tariff.uom or "Day",
+                        "uom": "Day",
                         "description": f"From {formatdate(start_date)} to {formatdate(end_date)}",
                         "income_account": income_account,
                         "custom_bill_from_date":start_date,
@@ -495,7 +500,7 @@ def generate_monthly_container_invoices(now=None):
                                 "item_name": item_name,
                                 "rate": slab["rate"],
                                 "qty": slab_days,
-                                "uom": tariff.uom or "Day",
+                                "uom": "Day",
                                 "description": f"From {slab['from_date'].strftime('%d-%m-%Y')} to {slab['to_date'].strftime('%d-%m-%Y')}",
                                 "income_account": income_account,
                                 "custom_bill_from_date": slab["from_date"],
@@ -529,7 +534,7 @@ def generate_monthly_container_invoices(now=None):
                             "item_name": item_name,
                             "rate": item.rate,
                             "qty": effective_days,
-                            "uom": tariff.uom or "Day",
+                            "uom": "Day",
                             "description": description,
                             "income_account": income_account,
                             "custom_bill_from_date": arrival_date,
@@ -566,7 +571,7 @@ def generate_monthly_container_invoices(now=None):
                                 "item_name": item_name,
                                 "qty": duration,
                                 "rate": rate,
-                                "uom": tariff.uom or "Day",
+                                "uom": "Day",
                                 "description": f"From {start_date.strftime('%d-%m-%Y')} to {end_date.strftime('%d-%m-%Y')}",
                                 "income_account": income_account,
                                 "custom_bill_from_date": start_date,
