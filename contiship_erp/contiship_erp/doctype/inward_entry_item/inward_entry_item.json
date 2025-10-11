@@ -117,7 +117,6 @@
    "label": "Crossing Item"
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "rate",
    "fieldtype": "Currency",
    "label": "Rate"
@@ -128,14 +127,12 @@
    "label": "Tariff"
   },
   {
-   "allow_on_submit": 1,
    "default": "0",
    "fieldname": "enable_75_rule",
    "fieldtype": "Check",
    "label": "Enable 75% Rule"
   },
   {
-   "allow_on_submit": 1,
    "depends_on": "eval:doc.enable_75_rule",
    "fieldname": "after_75_discounted_rate",
    "fieldtype": "Currency",
@@ -147,14 +144,12 @@
    "fieldtype": "Column Break"
   },
   {
-   "allow_on_submit": 1,
    "default": "0",
    "fieldname": "enable_875_rule",
    "fieldtype": "Check",
    "label": "Enable 87.5% Rule"
   },
   {
-   "allow_on_submit": 1,
    "depends_on": "eval:doc.enable_875_rule",
    "fieldname": "after_875discounted_rate",
    "fieldtype": "Currency",
@@ -162,7 +157,6 @@
    "mandatory_depends_on": "eval:doc.enable_875_rule"
   },
   {
-   "allow_on_submit": 1,
    "default": "0",
    "fieldname": "minimum_commitmentnoofdays",
    "fieldtype": "Int",
@@ -178,7 +172,6 @@
    "label": "\"Note: The tariff configuration shown below will be applied in the final invoice.\""
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "service_type",
    "fieldtype": "Link",
    "label": "Service",
@@ -195,7 +188,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-10 15:51:13.593586",
+ "modified": "2025-10-10 16:23:28.309895",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry Item",
