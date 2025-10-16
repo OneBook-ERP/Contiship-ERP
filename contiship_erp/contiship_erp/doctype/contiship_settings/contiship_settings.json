@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-16 12:19:40.107543",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enable_sidebar",
+  "home_page",
+  "column_break_nokg",
+  "toggle_default_sidebar",
+  "menu_items_section",
+  "items"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enable_sidebar",
+   "fieldtype": "Check",
+   "label": "Enable Sidebar"
+  },
+  {
+   "fieldname": "home_page",
+   "fieldtype": "Data",
+   "label": "Home Page"
+  },
+  {
+   "fieldname": "column_break_nokg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "toggle_default_sidebar",
+   "fieldtype": "Check",
+   "label": "Toggle Default Sidebar"
+  },
+  {
+   "fieldname": "menu_items_section",
+   "fieldtype": "Section Break",
+   "label": "Menu Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Sidebar Items"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-10-16 12:30:48.127593",
+ "modified_by": "Administrator",
+ "module": "ContiShip ERP",
+ "name": "Contiship Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

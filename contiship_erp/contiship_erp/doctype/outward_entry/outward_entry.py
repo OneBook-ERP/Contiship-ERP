@@ -345,7 +345,7 @@ def create_container_sales_invoice(outward_entry):
             }).insert(ignore_permissions=True)
         outward = frappe.get_doc("Outward Entry", outward_entry)
         inward = frappe.get_doc("Inward Entry", outward.consignment)
-        if inward.service_type == "Sqft Based":
+        if inward.service_type == "Sqft Based" or not inward.storage_bill:
             return
 
         customer = frappe.get_doc("Customer", outward.customer)
@@ -631,7 +631,7 @@ def create_container_sales_invoice(outward_entry):
         si.custom_reference_docname = inward.name
         si.custom_invoice_type = "Storage"
         si.custom_consignment = inward.boeinvoice_no
-        si.custom_inward_date = inward.arrival_date
+        si.custom_inward_date = inward.sales_invoice_inward_date
         si.set("items", invoice_items)   
         si.insert()
 

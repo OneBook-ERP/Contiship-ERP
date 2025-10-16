@@ -12,6 +12,7 @@ class InwardEntry(Document):
     
     def on_submit(self):
         self.validate_services()
+        self.sales_invoice_inward_date()
         if self.add_on_services_inward:
             frappe.enqueue("contiship_erp.contiship_erp.doctype.inward_entry.inward_entry.create_sales_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", inward_entry=self.name)
 
@@ -31,6 +32,11 @@ class InwardEntry(Document):
                 elif items.container_size == "LCL" and not items.rate:
                     if not any(t.rent_type == "LCL" for t in self.customer_tariff_config):
                         frappe.throw("LCL Based tariff is not set for this Inward Entry tariff.")
+
+
+    def sales_invoice_inward_date(self):
+        if self.inward_entry_items:
+            self.sales_invoice_inward_date = self.inward_entry_items[0].container_arrival_date
 
                     
 

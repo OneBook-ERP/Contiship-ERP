@@ -43,10 +43,7 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {
-    "Item" : "public/js/item.js",
-    "Customer" : "public/js/customer.js"
-}
+
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -148,8 +145,23 @@ doctype_js = {
 # 	}
 # }
 
+
+app_include_js = [
+    "/assets/contiship_erp/js/sidebar.js",  
+]
+
+doctype_js = {
+    "Item" : "public/js/item.js",
+    "Customer" : "public/js/customer.js"  
+}
+
+doctype_list_js = {
+    "Sales Invoice" : "public/js/sales_invoice.js"
+}
+
 doc_events = {
 	"Sales Invoice": {
+        "before_submit": "contiship_erp.custom.traffic_custom.sales_invoice_before_submit",
 		"on_submit": "contiship_erp.custom.traffic_custom.sales_invoice_on_submit",
         "after_insert": "contiship_erp.custom.traffic_custom.sales_invoice_after_insert"
 	}

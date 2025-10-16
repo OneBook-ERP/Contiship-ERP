@@ -26,7 +26,6 @@ def get_columns():
         {"label": "Outward Entry", "fieldname": "outward_entry_id", "fieldtype": "Data", "width": 400},
         {"label": "Sales Invoice", "fieldname": "sales_invoice", "fieldtype": "Data", "width": 400},
     ]
-
 def get_data(filters):
     conditions = ""
     values = {}
@@ -57,7 +56,7 @@ def get_data(filters):
         conditions += " AND ied.item = %(item)s"
         values["item"] = filters["item"]
 
-    # Fetch data
+    # Fetch only fully outwarded items (available_qty = 0)
     rows = frappe.db.sql(f"""
         SELECT
             ie.name AS id,
@@ -110,7 +109,8 @@ def get_data(filters):
         JOIN
             `tabInward Entry Item` AS ied ON ied.parent = ie.name
         WHERE
-            1=1 {conditions}
+            1=1 
+            {conditions}
             AND CAST(ied.qty - IFNULL((
                 SELECT SUM(oed.qty)
                 FROM `tabOutward Entry Items` AS oed
@@ -119,12 +119,12 @@ def get_data(filters):
                     oe.consignment = ie.name 
                     AND oed.item = ied.item
                     AND oed.container_name = ied.container
-            ), 0) AS UNSIGNED) > 0
+            ), 0) AS UNSIGNED) = 0
         ORDER BY
             ie.name DESC
     """, values, as_dict=1)
 
-    # Format outward entries
+    # Format outward entries and sales invoice links as before
     for row in rows:
         if row.get("outward_entry_id"):
             entries = []
@@ -139,7 +139,6 @@ def get_data(filters):
         else:
             row["outward_entry_id"] = ""
 
-    # Format sales invoice links
     for row in rows:
         if row.get("sales_invoice"):
             links = []

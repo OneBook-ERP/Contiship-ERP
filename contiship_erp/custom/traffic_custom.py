@@ -3,7 +3,8 @@ import calendar
 from datetime import datetime, timedelta
 from frappe.utils import nowdate, getdate, formatdate
 from collections import defaultdict
-
+from frappe.model.rename_doc import rename_doc
+from frappe.model.naming import make_autoname
 
 @frappe.whitelist()
 def fetch_item_data(service_type):
@@ -88,24 +89,30 @@ def get_valid_service_items(doctype, txt, searchfield, start, page_len, filters)
         ORDER BY idx DESC
     """, as_list=True)
 
+
+def sales_invoice_before_submit(doc, method):
+    import datetime
+    from frappe.utils import getdate
+    doc.due_date = getdate(doc.posting_date) + datetime.timedelta(days=7)
+
+
 def sales_invoice_on_submit(doc, method):
+    import datetime    
     from frappe.model.rename_doc import rename_doc
     from frappe.model.naming import make_autoname
-    import datetime
 
     year = datetime.datetime.now().year
-    current = str(year)[-2:] 
+    current = str(year)[-2:]
     next_year = str(year + 1)[-2:]
 
     new_name = make_autoname(f"GWH/{current}-{next_year}/.###")
-
+    if doc.is_return:
+        new_name = make_autoname(f"CH/{current}-{next_year}/.###")
 
     if doc.name != new_name:
         rename_doc("Sales Invoice", doc.name, new_name, force=True)
         frappe.db.set_value("Sales Invoice", new_name, "name", new_name)
         frappe.db.commit()
-        frappe.log_error("Renamed Invoice", f"{doc.name} ➜ {new_name}")
-
 
 
 def sales_invoice_after_insert(doc, method):    
@@ -153,6 +160,42 @@ def sales_invoice_after_insert(doc, method):
                 doc.save(ignore_permissions=True)
                 frappe.db.commit()
 
+
+
+@frappe.whitelist()
+def get_sidebar_items():
+    doc = frappe.get_doc("Contiship Settings", "Contiship Settings")
+    items = doc.items
+    allowed_items = []
+    user = frappe.session.user
+    for item in items:
+        allowed = True
+        if item.reference_type and item.reference_to:
+
+            if item.reference_type == "DocType":
+                if not frappe.has_permission(item.reference_to, "read", user=user):
+                    allowed = False
+            elif item.reference_type == "Page":
+                if not frappe.has_permission("Page", "read", doc=item.reference_to, user=user):
+                    allowed = False              
+            elif item.reference_type == "Report":               
+                if not frappe.has_permission("Report", "read", doc=item.reference_to, user=user):
+                    allowed = False
+        if allowed:
+            allowed_items.append({
+                "icon": item.icon,
+                "label": item.label,
+                "redirect_url": item.redirect_url,
+                "parent_item": item.parent_item,
+                "reference_type": item.reference_type,
+                "reference_to": item.reference_to,
+            })
+    return {
+        "items": allowed_items,
+        "enabled": doc.enable_sidebar,
+        "toggle_default_sidebar": doc.toggle_default_sidebar,
+        "home_page": doc.home_page
+    }
 
 
 
@@ -309,7 +352,10 @@ def generate_monthly_container_invoices(now=None):
 
         inward_entries = frappe.get_all("Inward Entry", filters={
             "docstatus": 1,
-            "invoice_generated": 0,        
+            "invoice_generated": 0,
+            "storage_bill": 1,
+            "service_type": "Others"
+
         }, fields=["name", "monthly_invoice_date","arrival_date"])
         filtered_entries = [
             entry for entry in inward_entries
@@ -592,7 +638,7 @@ def generate_monthly_container_invoices(now=None):
                 si.custom_reference_docname = inward.name
                 si.custom_invoice_type = "Storage"
                 si.custom_consignment = inward.boeinvoice_no
-                si.custom_inward_date = inward.arrival_date
+                si.custom_inward_date = inward.sales_invoice_inward_date
                 si.set("items", invoice_items)
                 si.custom_bill_from_date = min(all_dates) if all_dates else first_day
                 si.custom_bill_to_date = max(all_dates) if all_dates else end_of_month

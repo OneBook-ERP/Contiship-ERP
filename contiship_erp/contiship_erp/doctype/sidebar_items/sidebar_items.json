@@ -1,0 +1,73 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-16 12:21:32.295872",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "icon",
+  "label",
+  "redirect_url",
+  "parent_item",
+  "reference_type",
+  "reference_to"
+ ],
+ "fields": [
+  {
+   "fieldname": "icon",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Icon"
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label ",
+   "reqd": 1
+  },
+  {
+   "fieldname": "redirect_url",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Redirect URL",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reference_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Reference Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_to",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Reference To",
+   "options": "reference_type"
+  },
+  {
+   "fieldname": "parent_item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Parent Item",
+   "options": "Sidebar Items Group"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-10-16 12:25:42.181827",
+ "modified_by": "Administrator",
+ "module": "ContiShip ERP",
+ "name": "Sidebar Items",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
