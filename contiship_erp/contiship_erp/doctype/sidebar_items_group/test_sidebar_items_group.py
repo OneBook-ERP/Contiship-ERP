@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestRepackingEntry(FrappeTestCase):
+class TestSidebarItemsGroup(FrappeTestCase):
 	pass

@@ -1,7 +1,7 @@
 // Copyright (c) 2025, OneBook and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Consignment Report"] = {
+frappe.query_reports["Live Report"] = {
 	"filters": [
 		{
 			fieldname: "customer",

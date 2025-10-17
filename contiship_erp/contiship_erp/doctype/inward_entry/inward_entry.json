@@ -15,6 +15,7 @@
   "arrival_date",
   "cha_name",
   "monthly_invoice_date",
+  "sales_invoice_inward_date",
   "section_break_quek",
   "description",
   "column_break_atgv",
@@ -25,6 +26,7 @@
   "add_on_services_inward",
   "amended_from",
   "tariff_config_tab",
+  "storage_bill",
   "customer_tariff_config"
  ],
  "fields": [
@@ -36,7 +38,7 @@
    "default": "Now",
    "fieldname": "arrival_date",
    "fieldtype": "Date",
-   "label": "Date"
+   "label": "Inward Date"
   },
   {
    "fieldname": "section_break_pcxa",
@@ -139,6 +141,19 @@
    "label": "Service Type",
    "options": "\nSqft Based\nOthers",
    "reqd": 1
+  },
+  {
+   "default": "1",
+   "description": "If you uncheck this, the sales invoice will not be created automatically.",
+   "fieldname": "storage_bill",
+   "fieldtype": "Check",
+   "label": "Storage Bill"
+  },
+  {
+   "fieldname": "sales_invoice_inward_date",
+   "fieldtype": "Date",
+   "hidden": 1,
+   "label": "Sales Invoice Inward Date"
   }
  ],
  "force_re_route_to_default_view": 1,
@@ -155,7 +170,7 @@
    "link_fieldname": "consignment"
   }
  ],
- "modified": "2025-08-07 15:54:34.609834",
+ "modified": "2025-10-16 11:58:25.728487",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",

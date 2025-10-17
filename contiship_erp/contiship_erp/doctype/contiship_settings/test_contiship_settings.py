@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestConsignment(FrappeTestCase):
+class TestContishipSettings(FrappeTestCase):
 	pass

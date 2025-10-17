@@ -28,7 +28,7 @@
    "fieldname": "date",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Date",
+   "label": "Outward Date",
    "reqd": 1
   },
   {
@@ -122,7 +122,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-11 20:32:13.835099",
+ "modified": "2025-10-16 00:38:20.593997",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Outward Entry",

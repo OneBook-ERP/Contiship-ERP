@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class RepackingEntry(Document):
+class SidebarItems(Document):
 	pass
