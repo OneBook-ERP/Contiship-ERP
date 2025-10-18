@@ -39,7 +39,7 @@ ContiShip ERP is a comprehensive Warehouse and Inventory Management System built
 - Frappe & ERPNext 15+
 - Python 3.7+
 - Node.js 14+
-- MariaDB 10.3+ / PostgreSQL 9.5+
+- MariaDB 10.3+
 - Redis 5+
 
 ## Installation
