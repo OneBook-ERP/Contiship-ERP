@@ -20,7 +20,8 @@ def fetch_item_data(service_type):
             "add_on_type":None,
             "add_on_service":None,
             "rate": None,
-            "uom": None
+            "uom": None,
+            "lcl_type": None
         }
         item_price = frappe.db.sql("""
                 SELECT price_list_rate
@@ -416,21 +417,27 @@ def generate_monthly_container_invoices(now=None):
             #     arrival_date = getdate(item.container_arrival_date)
             #     inward_qty = item.qty
 
-                tariffs = inward.customer_tariff_config or frappe.get_doc("Customer", inward.customer).custom_customer_traffic_config
-                tariff = next((
-                    t for t in tariffs 
-                    if (
-                        (t.rent_type == "Container Based" and str(t.container_feet) == str(container_size)) or
-                        (t.rent_type == "LCL" and str(t.lcl_type) == str(container_size))
-                    )
-                ), None)
+                # tariffs = inward.customer_tariff_config or frappe.get_doc("Customer", inward.customer).custom_customer_traffic_config
+                # tariff = next((
+                #     t for t in tariffs 
+                #     if (
+                #         (t.rent_type == "Container Based" and str(t.container_feet) == str(container_size)) or
+                #         (t.rent_type == "LCL" and str(t.lcl_type) == str(container_size))
+                #     )
+                # ), None)
 
-                if not tariff:
-                    continue
+                # if not tariff:
+                #     continue
 
                 # items = frappe.get_all("Outward Entry Items", filters={"container": container, "parenttype": "Outward Entry", "crossing_item": 0},fields=["qty", "parent"])
 
-                items = frappe.get_all("Outward Entry Items", filters={"container_name": container_name, "parenttype": "Outward Entry", "crossing_item": 0},fields=["qty", "parent"], order_by="creation ASC")
+                parents = frappe.get_all("Outward Entry",
+                    filters={
+                        "consignment": inward.name,                                                     
+                    },
+                    pluck="name"
+                )
+                items = frappe.get_all("Outward Entry Items", filters={"container_name": container_name, "parent": ["in", parents], "parenttype": "Outward Entry", "crossing_item": 0},fields=["qty", "parent"], order_by="creation ASC")
                 outward_items = []
 
                 for oitem in items:
@@ -470,45 +477,49 @@ def generate_monthly_container_invoices(now=None):
                     })
                     all_dates.extend([start_date, end_date])
                 else:
+
                     dispatched_total = 0
                     prev_end = None
-                    if item.enable_875_rule or item.enable_75_rule:                                
-                        outward_items = sorted(outward_items, key=lambda x: getdate(x["date"]))                      
-                        
-                        current_start_date = max(arrival_date if not prev_end else prev_end + timedelta(days=1), first_day)
+
+                    if item.enable_875_rule or item.enable_75_rule:
+                        current_start_date = arrival_date
+                        if month_invoice_details:
+                            dispatched_total = get_billed_qty(container)
                         slabs = []
-
-                        final_outward_date = max(getdate(r["date"]) for r in outward_items)                                                       
-                        final_invoice_date = min(
-                            max(final_outward_date, arrival_date + timedelta(days=(item.minimum_commitmentnoofdays or 0) - 1)),
-                            end_of_month
-                        )
-                        duration_days = (final_invoice_date - arrival_date).days + 1
-                        effective_days = max(duration_days, (item.minimum_commitmentnoofdays or 0))
-
+                
+                        final_outward_date = max(getdate(r["date"]) for r in outward_items)
+                        final_duration_days = (final_outward_date - arrival_date).days + 1
+                        commitment_days = item.minimum_commitmentnoofdays if not month_invoice_details else 0
                         for idx, row in enumerate(outward_items):
-                            current_date = getdate(row["date"])
-                        
+                            outward_date = getdate(row["date"])
+                            duration_days = (outward_date - current_start_date).days + 1
                             dispatched_before_current = dispatched_total   
                             dispatched_total += row["qty"]
                             dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0
 
-                            
-                            if item.enable_875_rule and dispatched_percent >= 87.5:
-                                rate = item.after_875discounted_rate
-                                slab_type = "87.5"
-                            elif item.enable_75_rule and dispatched_percent >= 75:
+                            if not final_duration_days<commitment_days and duration_days<commitment_days and idx==0 :
+                                frappe.log_error("commitment_days", commitment_days)                       
+                                outward_date = arrival_date + timedelta(days=commitment_days-1)
+                                frappe.log_error("outward_date", outward_date)
+                                
+
+                            if item.enable_75_rule and dispatched_percent >= 75 and (final_duration_days>commitment_days):
                                 rate = item.after_75_discounted_rate
                                 slab_type = "75"
+                            elif item.enable_875_rule and dispatched_percent >= 87.5 and (final_duration_days>commitment_days):
+                                rate = item.after_875discounted_rate
+                                slab_type = "87.5"                    
                             else:
                                 rate = item.rate
-                                slab_type = "normal"
-                            
-                            if idx + 1 < len(outward_items):
-                                next_date = getdate(outward_items[idx]["date"])
-                            else:
-                                next_date = final_invoice_date
-                            
+                                slab_type = "0"
+
+                            # if idx + 1 < len(outward_items):
+                            #     next_date = getdate(outward_items[idx]["date"])
+                            #     frappe.log_error("next_date1", next_date)
+                            # else:
+                            next_date = outward_date
+                            frappe.log_error("next_date2", next_date)
+
                             if next_date < current_start_date:
                                 continue
 
@@ -516,28 +527,26 @@ def generate_monthly_container_invoices(now=None):
                                 "from_date": current_start_date,
                                 "to_date": next_date,
                                 "rate": rate,
-                                "slab_type": slab_type,                                
+                                "slab_type": slab_type
                             })
 
                             current_start_date = next_date + timedelta(days=1)
                             outward = frappe.get_doc("Outward Entry", row["parent"])
                             outward.billed = 1
                             outward.save()
-                    
-                        item_name = frappe.get_value("Item", item.service_type, "item_name")
 
+                        item_name = frappe.get_value("Item", item.service_type, "item_name")                
                         merged_slabs = []
+                        frappe.log_error("slabs", slabs)
                         for slab in slabs:
                             if not merged_slabs:
                                 merged_slabs.append(slab)
                             else:
-                                last = merged_slabs[-1]
-                                # Merge if rate and slab_type match and dates are contiguous
-                                if slab["rate"] == last["rate"] and slab["slab_type"] == last["slab_type"] and slab["from_date"] == last["to_date"] + timedelta(days=1):
-                                    # Extend last slab's to_date
+                                last = merged_slabs[-1]                        
+                                if slab["rate"] == last["rate"] and slab["slab_type"] == last["slab_type"] and slab["from_date"] == last["to_date"] + timedelta(days=1):                            
                                     last["to_date"] = slab["to_date"]
                                 else:
-                                    merged_slabs.append(slab)
+                                    merged_slabs.append(slab)            
 
                         for slab in merged_slabs:
                             slab_days = (slab["to_date"] - slab["from_date"]).days + 1
@@ -552,13 +561,102 @@ def generate_monthly_container_invoices(now=None):
                                 "custom_bill_from_date": slab["from_date"],
                                 "custom_bill_to_date": slab["to_date"],
                                 "custom_container": container,
-                                "custom_container_name": container_name,
-                                "custom_container_status": "Completed" if dispatched_total >= inward_qty else "Partial",
-                                "custom_invoice_type": "Monthly Billing",
-                                "custom_outward_qty": dispatched_total
+                                "custom_container_name": container_name,                      
+                                "custom_container_status": "Completed",
+                                "custom_invoice_type": "Immediate Billing",                        
                             })
                             all_dates.extend([slab['from_date'], slab['to_date']])
-                            prev_end = slab['to_date'] 
+                            prev_end = slab['to_date']
+
+                    # dispatched_total = 0
+                    # prev_end = None
+                    # if item.enable_875_rule or item.enable_75_rule:                                
+                    #     outward_items = sorted(outward_items, key=lambda x: getdate(x["date"]))                      
+                        
+                    #     current_start_date = max(arrival_date if not prev_end else prev_end + timedelta(days=1), first_day)
+                    #     slabs = []
+
+                    #     final_outward_date = max(getdate(r["date"]) for r in outward_items)                                                       
+                    #     final_invoice_date = min(
+                    #         max(final_outward_date, arrival_date + timedelta(days=(item.minimum_commitmentnoofdays or 0) - 1)),
+                    #         end_of_month
+                    #     )
+                    #     duration_days = (final_invoice_date - arrival_date).days + 1
+                    #     effective_days = max(duration_days, (item.minimum_commitmentnoofdays or 0))
+
+                    #     for idx, row in enumerate(outward_items):
+                    #         current_date = getdate(row["date"])
+                        
+                    #         dispatched_before_current = dispatched_total   
+                    #         dispatched_total += row["qty"]
+                    #         dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0
+
+                            
+                    #         if item.enable_875_rule and dispatched_percent >= 87.5:
+                    #             rate = item.after_875discounted_rate
+                    #             slab_type = "87.5"
+                    #         elif item.enable_75_rule and dispatched_percent >= 75:
+                    #             rate = item.after_75_discounted_rate
+                    #             slab_type = "75"
+                    #         else:
+                    #             rate = item.rate
+                    #             slab_type = "normal"
+                            
+                    #         if idx + 1 < len(outward_items):
+                    #             next_date = getdate(outward_items[idx]["date"])
+                    #         else:
+                    #             next_date = final_invoice_date
+                            
+                    #         if next_date < current_start_date:
+                    #             continue
+
+                    #         slabs.append({
+                    #             "from_date": current_start_date,
+                    #             "to_date": next_date,
+                    #             "rate": rate,
+                    #             "slab_type": slab_type,                                
+                    #         })
+
+                    #         current_start_date = next_date + timedelta(days=1)
+                    #         outward = frappe.get_doc("Outward Entry", row["parent"])
+                    #         outward.billed = 1
+                    #         outward.save()
+                    
+                    #     item_name = frappe.get_value("Item", item.service_type, "item_name")
+
+                    #     merged_slabs = []
+                    #     for slab in slabs:
+                    #         if not merged_slabs:
+                    #             merged_slabs.append(slab)
+                    #         else:
+                    #             last = merged_slabs[-1]
+                    #             # Merge if rate and slab_type match and dates are contiguous
+                    #             if slab["rate"] == last["rate"] and slab["slab_type"] == last["slab_type"] and slab["from_date"] == last["to_date"] + timedelta(days=1):
+                    #                 # Extend last slab's to_date
+                    #                 last["to_date"] = slab["to_date"]
+                    #             else:
+                    #                 merged_slabs.append(slab)
+
+                    #     for slab in merged_slabs:
+                    #         slab_days = (slab["to_date"] - slab["from_date"]).days + 1
+                    #         invoice_items.append({
+                    #             "item_code": item.service_type,
+                    #             "item_name": item_name,
+                    #             "rate": slab["rate"],
+                    #             "qty": slab_days,
+                    #             "uom": "Day",
+                    #             "description": f"From {slab['from_date'].strftime('%d-%m-%Y')} to {slab['to_date'].strftime('%d-%m-%Y')}",
+                    #             "income_account": income_account,
+                    #             "custom_bill_from_date": slab["from_date"],
+                    #             "custom_bill_to_date": slab["to_date"],
+                    #             "custom_container": container,
+                    #             "custom_container_name": container_name,
+                    #             "custom_container_status": "Completed" if dispatched_total >= inward_qty else "Partial",
+                    #             "custom_invoice_type": "Monthly Billing",
+                    #             "custom_outward_qty": dispatched_total
+                    #         })
+                    #         all_dates.extend([slab['from_date'], slab['to_date']])
+                    #         prev_end = slab['to_date'] 
 
                     if not item.enable_875_rule and not item.enable_75_rule:
                         final_outward_date = max(getdate(r["date"]) for r in outward_items)

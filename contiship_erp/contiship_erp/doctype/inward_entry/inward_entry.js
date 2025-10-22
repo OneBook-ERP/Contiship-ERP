@@ -172,7 +172,7 @@ frappe.ui.form.on("Customer Traffic Config", {
     enable_875_rule(frm, cdt, cdn) {
         reapply_tariffs_to_containers(frm, cdt, cdn);
     },
-    after_875_discounted_rate(frm, cdt, cdn) {
+    after_875discounted_rate(frm, cdt, cdn) {
         reapply_tariffs_to_containers(frm, cdt, cdn);
     },
     after_75_discounted_rate(frm, cdt, cdn) {
@@ -184,8 +184,7 @@ frappe.ui.form.on("Customer Traffic Config", {
 });
 
 
-function reapply_tariffs_to_containers(frm, cdt, cdn) {
-    console.log("Reapplying tariffs to containers...");
+function reapply_tariffs_to_containers(frm, cdt, cdn) {   
     (frm.doc.inward_entry_items || []).forEach(row => {
         if (row.container_size) {
             let tariff = (frm.doc.customer_tariff_config || []).find(t =>
@@ -193,7 +192,7 @@ function reapply_tariffs_to_containers(frm, cdt, cdn) {
                 (t.lcl_type && t.lcl_type.toString() === row.container_size.toString())
             );           
 
-            if (tariff) {
+            if (tariff) {         
                 frappe.model.set_value(row.doctype, row.name, 'rate', tariff.rate || 0);
                 frappe.model.set_value(row.doctype, row.name, 'service_type', tariff.service_type || 0);
                 frappe.model.set_value(row.doctype, row.name, 'enable_75_rule', tariff.enable_75_rule || 0);

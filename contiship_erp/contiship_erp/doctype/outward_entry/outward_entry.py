@@ -16,7 +16,7 @@ class OutwardEntry(Document):
          
 
     def on_submit(self):        
-        frappe.enqueue("contiship_erp.contiship_erp.doctype.outward_entry.outward_entry.create_container_sales_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", outward_entry=self.name)
+        frappe.enqueue("contiship_erp.contiship_erp.doctype.outward_entry.outward_entry.container_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", outward_entry=self.name)
    
     def calculate_available_space(self):
         errors = []
@@ -335,102 +335,460 @@ def get_inward_html_table(customer):
     return html
 
 
+# @frappe.whitelist()
+# def create_container_sales_invoice(outward_entry):
+#     try:
+#         if not frappe.db.exists("UOM", {"name": "Day"}):
+#             frappe.get_doc({
+#                 "doctype": "UOM",               
+#                 "uom_name": "Day",                
+#             }).insert(ignore_permissions=True)
+#         outward = frappe.get_doc("Outward Entry", outward_entry)
+#         inward = frappe.get_doc("Inward Entry", outward.consignment)
+#         if inward.service_type == "Sqft Based" or not inward.storage_bill:
+#             return
+
+#         customer = frappe.get_doc("Customer", outward.customer)
+#         tariffs = inward.customer_tariff_config or customer.custom_customer_traffic_config
+
+#         if not tariffs:
+#             frappe.error_log("No tariff configuration found.")
+
+#         containers_not_fully_outwarded = []
+#         container_map = {}
+#         for item in inward.inward_entry_items:
+#                 container_name = item.container
+#                 if not container_name:
+#                     continue
+#                 if item.crossing_item:
+#                     continue                
+#                 if container_name not in container_map:
+#                     container_map[container_name] = {
+#                         "items": [item],
+#                         "total_qty": item.qty,
+#                         "container_size": item.container_size,
+#                         "arrival_date": getdate(item.container_arrival_date),
+#                         "container_name": item.container,
+#                         "name": item.name
+#                     }
+#                 else:
+#                     container_map[container_name]["items"].append(item)
+#                     container_map[container_name]["total_qty"] += item.qty
+
+#         for container_name, data in container_map.items():
+#             items_list = data["items"]
+#             item = items_list[0]                             
+#             inward_qty = data["total_qty"]           
+#             container = data["name"]
+#             container_name = data["container_name"]
+           
+
+#         # for item in inward.inward_entry_items:
+#         #     if item.crossing_item:
+#         #         continue
+#         #     container = item.name            
+#         #     inward_qty = item.qty
+
+#             outward_items = frappe.get_all("Outward Entry Items",
+#                 filters={
+#                     "container_name": container_name,
+#                     "container": container,
+#                     "parenttype": "Outward Entry",
+#                     "docstatus": 1,
+#                     "crossing_item": 0,
+#                     "parent": ["!=", outward.name]                    
+#                 },
+#                 fields=["qty"],
+#                 order_by="creation ASC"
+#             )
+
+#             # outward_items = frappe.get_all("Outward Entry Items",
+#             #     filters={
+#             #         "container": container,
+#             #         "parenttype": "Outward Entry",
+#             #         "docstatus": 1,
+#             #         "crossing_item": 0,
+#             #         "parent": ["!=", outward.name]                    
+#             #     },
+#             #     fields=["qty"]
+#             # )
+
+#             total_outward_qty = sum(out.qty for out in outward_items)
+#             frappe.log_error(f"total_outward_qty: {total_outward_qty}")
+#             frappe.log_error(f"inward_qty: {inward_qty}")
+            
+#             # if outward:                
+#             #     for row in outward.items:
+#             #         if row.container == container:
+#             #             total_outward_qty += row.qty 
+#             if outward:                
+#                 for row in outward.items:
+#                     if row.container_name == container_name:
+#                         total_outward_qty += row.qty             
+
+#             if total_outward_qty < inward_qty:
+#                 containers_not_fully_outwarded.append(container)                
+           
+#         if containers_not_fully_outwarded:
+#             frappe.log_error(f"Cannot create invoice. Containers not fully outwarded: {', '.join(containers_not_fully_outwarded)}")
+#             return
+
+#         invoice_items = []
+
+#         for container_name, data in container_map.items():
+#             items_list = data["items"]
+#             item = items_list[0]                             
+#             inward_qty = data["total_qty"]
+#             container_name = data["container_name"]
+#             container_size = data["container_size"]            
+#             container = data["name"]
+#             frappe.log_error(f"inward_qty: {inward_qty}")
+
+#         # for item in inward.inward_entry_items:       
+#         #     container = item.name
+#         #     container_name = item.container
+#         #     container_size = item.container_size
+#         #     inward_qty = item.qty
+
+#             month_invoice_details = get_monthly_invoice(container)
+#             if month_invoice_details:
+#                 if month_invoice_details["custom_container_status"] == "Completed":
+#                     continue
+#                 if month_invoice_details["custom_bill_to_date"]:
+#                     arrival_date = getdate(month_invoice_details["custom_bill_to_date"]) + timedelta(days=1)
+#             else:
+#                 arrival_date = getdate(item.container_arrival_date)
+
+#             tariff = next((
+#                 t for t in tariffs 
+#                 if (
+#                     (t.rent_type == "Container Based" and str(t.container_feet) == str(container_size)) or
+#                     (t.rent_type == "LCL" and str(t.lcl_type) == str(container_size))
+#                 )
+#             ), None)
+
+#             if not tariff and not item.rate:
+#                 frappe.log_error(f"No matching tariff for {container_size}ft", f"Tariff Error for {container}")
+#                 continue
+
+#             items = frappe.get_all("Outward Entry Items",
+#                 filters={
+#                     "container_name": container_name,
+#                     "container": container,
+#                     "parenttype": "Outward Entry",
+#                     "crossing_item": 0,                                 
+#                 },
+#                 fields=["qty", "parent"],
+#                 order_by="creation ASC"
+#             )
+
+#             # items = frappe.get_all("Outward Entry Items",
+#             #     filters={
+#             #         "container": container,
+#             #         "parenttype": "Outward Entry",
+#             #         "crossing_item": 0,                                 
+#             #     },
+#             #     fields=["qty", "parent"]
+#             # )
+#             outward_items = []
+
+#             for oitem in items:
+#                 billed = frappe.db.get_value("Outward Entry", oitem["parent"], "billed")
+#                 if not billed:
+#                     oitem["date"] = frappe.db.get_value("Outward Entry", oitem["parent"], "date")
+#                     outward_items.append(oitem)
+           
+#             if not outward_items:
+#                 continue
+
+#             outward_items.sort(key=lambda x: x["date"])
+#             default_company = frappe.defaults.get_user_default("Company")
+#             income_account = frappe.get_value("Company", default_company, "default_income_account")
+
+#             if item.enable_875_rule or item.enable_75_rule:                           
+#                 outward_items = sorted(outward_items, key=lambda x: getdate(x["date"]))
+
+#                 dispatched_total = 0
+#                 if month_invoice_details:
+#                     dispatched_total = get_billed_qty(container)
+                
+#                 current_start_date = arrival_date
+#                 slabs = []
+
+#                 final_outward_date = max(getdate(r["date"]) for r in outward_items)
+#                 duration_days = (final_outward_date - arrival_date).days + 1
+#                 commitment_days = item.minimum_commitmentnoofdays if not month_invoice_details else 0
+#                 frappe.log_error("duration_days", duration_days)
+#                 frappe.log_error("commitment_days", commitment_days)
+#                 effective_days = max(duration_days, commitment_days)                                
+#                 if not month_invoice_details and item.minimum_commitmentnoofdays:
+#                     final_invoice_date = max(final_outward_date, arrival_date + timedelta(days=item.minimum_commitmentnoofdays - 1))
+#                 else:
+#                     final_invoice_date = final_outward_date
+
+#                 for idx, row in enumerate(outward_items):
+#                     current_date = getdate(row["date"])
+                   
+#                     dispatched_before_current = dispatched_total   
+#                     dispatched_total += row["qty"]
+#                     dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0
+                    
+#                     if item.enable_875_rule and dispatched_percent >= 87.5 and (duration_days>commitment_days):
+#                         rate = item.after_875discounted_rate
+#                         slab_type = "87.5"
+#                     elif item.enable_75_rule and dispatched_percent >= 75 and (duration_days>commitment_days):
+#                         rate = item.after_75_discounted_rate
+#                         slab_type = "75"
+#                     else:
+#                         rate = item.rate
+#                         slab_type = "normal"
+                    
+#                     if idx + 1 < len(outward_items):
+#                         next_date = getdate(outward_items[idx]["date"])
+#                     else:
+#                         next_date = final_invoice_date                 
+#                     if next_date < current_start_date:
+#                         continue
+
+#                     slabs.append({
+#                         "from_date": current_start_date,
+#                         "to_date": next_date,
+#                         "rate": rate,
+#                         "slab_type": slab_type
+#                     })
+
+#                     current_start_date = next_date + timedelta(days=1)
+               
+#                 item_name = frappe.get_value("Item", item.service_type, "item_name")                
+#                 merged_slabs = []
+#                 for slab in slabs:
+#                     if not merged_slabs:
+#                         merged_slabs.append(slab)
+#                     else:
+#                         last = merged_slabs[-1]                        
+#                         if slab["rate"] == last["rate"] and slab["slab_type"] == last["slab_type"] and slab["from_date"] == last["to_date"] + timedelta(days=1):                            
+#                             last["to_date"] = slab["to_date"]
+#                         else:
+#                             merged_slabs.append(slab)            
+
+#                 for slab in merged_slabs:
+#                     slab_days = (slab["to_date"] - slab["from_date"]).days + 1
+#                     invoice_items.append({
+#                         "item_code": item.service_type,
+#                         "item_name": item_name,
+#                         "rate": slab["rate"],
+#                         "qty": slab_days,
+#                         "uom": "Day",
+#                         "description": f"From {slab['from_date'].strftime('%d-%m-%Y')} to {slab['to_date'].strftime('%d-%m-%Y')}",
+#                         "income_account": income_account,
+#                         "custom_bill_from_date": slab["from_date"],
+#                         "custom_bill_to_date": slab["to_date"],
+#                         "custom_container": container,
+#                         "custom_container_name": container_name,                      
+#                         "custom_container_status": "Completed",
+#                         "custom_invoice_type": "Immediate Billing",                        
+#                     })
+
+
+            
+#             if not item.enable_875_rule and not item.enable_75_rule:
+#                 final_outward_date = max(getdate(r["date"]) for r in outward_items)
+#                 actual_last_outward_date = final_outward_date
+#                 duration_days = (actual_last_outward_date - arrival_date).days + 1
+#                 commitment_days = item.minimum_commitmentnoofdays if not month_invoice_details else 0
+#                 effective_days = max(duration_days, commitment_days) 
+
+#                 if not month_invoice_details and item.minimum_commitmentnoofdays:
+#                     final_invoice_date = max(actual_last_outward_date, arrival_date + timedelta(days=item.minimum_commitmentnoofdays - 1))
+#                 else:
+#                     final_invoice_date = actual_last_outward_date
+
+#                 description = f"From {arrival_date.strftime('%d-%m-%Y')} to {final_invoice_date.strftime('%d-%m-%Y')}"
+#                 item_name = frappe.get_value("Item", item.service_type, "item_name")
+
+#                 invoice_items.append({
+#                     "item_code": item.service_type,
+#                     "item_name": item_name,
+#                     "rate": item.rate,
+#                     "qty": effective_days,
+#                     "uom": "Day",
+#                     "description": description,
+#                     "income_account": income_account,
+#                     "custom_bill_from_date": arrival_date,
+#                     "custom_bill_to_date": final_invoice_date,
+#                     "custom_container": container,
+#                     "custom_container_name": container_name,
+#                     "custom_container_status": "Completed",
+#                     "custom_invoice_type": "Immediate Billing",
+                    
+#                 })
+
+#         frappe.log_error("invoice_items", invoice_items)
+
+#         if not invoice_items:
+#             frappe.log_error("No invoice items generated.")
+
+#         si = frappe.new_doc("Sales Invoice")
+#         si.customer = outward.customer
+#         si.posting_date = frappe.utils.nowdate()
+#         si.custom_reference_doctype = "Inward Entry"
+#         si.custom_reference_docname = inward.name
+#         si.custom_invoice_type = "Storage"
+#         si.custom_consignment = inward.boeinvoice_no
+#         si.custom_inward_date = inward.sales_invoice_inward_date
+#         si.set("items", invoice_items)   
+#         si.insert()
+
+#         inward.invoice_generated = 1
+#         inward.save()
+        
+#         return si.name
+
+#     except Exception as e:
+#         frappe.log_error(frappe.get_traceback(), "Container Invoice Generation Failed")
+#         frappe.throw("An error occurred while generating the container invoice.")
+
+
+def get_monthly_invoice(container,container_name):
+    try:
+        frappe.log_error("row", container)
+
+        invoice_items = frappe.get_all(
+            "Sales Invoice Item",
+            filters={
+                # "custom_container": container,
+                "custom_container_name": container_name,
+                "parenttype": "Sales Invoice",
+                "custom_invoice_type": "Monthly Billing"
+            },
+            fields=["name", "creation", "custom_bill_from_date", "custom_bill_to_date","custom_container_status"],
+            order_by="creation desc",
+            limit=1
+        )
+
+        if invoice_items:
+            return invoice_items[0]
+        else:
+            return None
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "get_monthly_invoice error")
+        return None
+
+
+    
+def get_billed_qty(container):
+    try:
+        items = frappe.get_all(
+            "Outward Entry Items",
+            filters={
+                "container": container,
+                "parenttype": "Outward Entry",
+                "crossing_item": 0,
+            },
+            fields=["qty", "parent"]
+        )
+
+        total_qty = 0
+
+        for item in items:
+            billed = frappe.db.get_value("Outward Entry", item["parent"], "billed")
+            if billed:
+                total_qty += item["qty"] or 0
+
+        return total_qty
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "get_billed_qty error")
+        return 0
+
+
+
+
+
 @frappe.whitelist()
-def create_container_sales_invoice(outward_entry):
+def container_invoice(outward_entry):
     try:
         if not frappe.db.exists("UOM", {"name": "Day"}):
             frappe.get_doc({
-                "doctype": "UOM",               
-                "uom_name": "Day",                
+                "doctype": "UOM",
+                "uom_name": "Day",
             }).insert(ignore_permissions=True)
+
         outward = frappe.get_doc("Outward Entry", outward_entry)
         inward = frappe.get_doc("Inward Entry", outward.consignment)
+
         if inward.service_type == "Sqft Based" or not inward.storage_bill:
             return
 
-        customer = frappe.get_doc("Customer", outward.customer)
-        tariffs = inward.customer_tariff_config or customer.custom_customer_traffic_config
 
-        if not tariffs:
-            frappe.error_log("No tariff configuration found.")
+        # Check the container State
+        
 
         containers_not_fully_outwarded = []
         container_map = {}
+
         for item in inward.inward_entry_items:
-                container_name = item.container
-                if not container_name:
-                    continue
-                if item.crossing_item:
-                    continue                
-                if container_name not in container_map:
-                    container_map[container_name] = {
-                        "items": [item],
-                        "total_qty": item.qty,
-                        "container_size": item.container_size,
-                        "arrival_date": getdate(item.container_arrival_date),
-                        "container_name": item.container,
-                        "name": item.name
-                    }
-                else:
-                    container_map[container_name]["items"].append(item)
-                    container_map[container_name]["total_qty"] += item.qty
+            if not item.container or item.crossing_item:
+                continue
+
+            container_name = item.container
+
+            if container_name not in container_map:
+                container_map[container_name] = {
+                    "items": [item],
+                    "total_qty": item.qty,
+                    "container_size": item.container_size,
+                    "arrival_date": getdate(item.container_arrival_date),
+                    "container_name": container_name,
+                    "name": item.name
+                }
+            else:
+                container_map[container_name]["items"].append(item)
+                container_map[container_name]["total_qty"] += item.qty
 
         for container_name, data in container_map.items():
-            items_list = data["items"]
-            item = items_list[0]                             
-            inward_qty = data["total_qty"]           
+            inward_qty = data["total_qty"]
             container = data["name"]
-            container_name = data["container_name"]
-           
 
-        # for item in inward.inward_entry_items:
-        #     if item.crossing_item:
-        #         continue
-        #     container = item.name            
-        #     inward_qty = item.qty
-
+            parents = frappe.get_all("Outward Entry",
+                filters={
+                    "consignment": inward.name,
+                    "docstatus": 1,                                   
+                },
+                pluck="name"
+            )
+            frappe.log_error("parents", parents)
             outward_items = frappe.get_all("Outward Entry Items",
                 filters={
-                    "container_name": container_name,
+                    "container_name": container_name,                   
                     "parenttype": "Outward Entry",
                     "docstatus": 1,
                     "crossing_item": 0,
-                    "parent": ["!=", outward.name]                    
+                    "parent": ["in", parents]
                 },
-                fields=["qty"],
-                order_by="creation ASC"
+                fields=["qty"]
             )
-
-            # outward_items = frappe.get_all("Outward Entry Items",
-            #     filters={
-            #         "container": container,
-            #         "parenttype": "Outward Entry",
-            #         "docstatus": 1,
-            #         "crossing_item": 0,
-            #         "parent": ["!=", outward.name]                    
-            #     },
-            #     fields=["qty"]
-            # )
+            frappe.log_error("outward_items", outward_items)
 
             total_outward_qty = sum(out.qty for out in outward_items)
-            frappe.log_error(f"total_outward_qty: {total_outward_qty}")
-            frappe.log_error(f"inward_qty: {inward_qty}")
-            
-            # if outward:                
-            #     for row in outward.items:
-            #         if row.container == container:
-            #             total_outward_qty += row.qty 
-            if outward:                
+            frappe.log_error("total_outward_qty", total_outward_qty)
+
+            if outward:
                 for row in outward.items:
                     if row.container_name == container_name:
-                        total_outward_qty += row.qty             
+                        total_outward_qty += row.qty
 
             if total_outward_qty < inward_qty:
-                containers_not_fully_outwarded.append(container)                
-           
+                containers_not_fully_outwarded.append(container_name)
+
         if containers_not_fully_outwarded:
             frappe.log_error(f"Cannot create invoice. Containers not fully outwarded: {', '.join(containers_not_fully_outwarded)}")
             return
+
+
+
+        # Invoice Creation
 
         invoice_items = []
 
@@ -443,13 +801,7 @@ def create_container_sales_invoice(outward_entry):
             container = data["name"]
             frappe.log_error(f"inward_qty: {inward_qty}")
 
-        # for item in inward.inward_entry_items:       
-        #     container = item.name
-        #     container_name = item.container
-        #     container_size = item.container_size
-        #     inward_qty = item.qty
-
-            month_invoice_details = get_monthly_invoice(container)
+            month_invoice_details = get_monthly_invoice(container,container_name)
             if month_invoice_details:
                 if month_invoice_details["custom_container_status"] == "Completed":
                     continue
@@ -458,21 +810,17 @@ def create_container_sales_invoice(outward_entry):
             else:
                 arrival_date = getdate(item.container_arrival_date)
 
-            tariff = next((
-                t for t in tariffs 
-                if (
-                    (t.rent_type == "Container Based" and str(t.container_feet) == str(container_size)) or
-                    (t.rent_type == "LCL" and str(t.lcl_type) == str(container_size))
-                )
-            ), None)
-
-            if not tariff and not item.rate:
-                frappe.log_error(f"No matching tariff for {container_size}ft", f"Tariff Error for {container}")
-                continue
+            parents = frappe.get_all("Outward Entry",
+                filters={
+                    "consignment": inward.name,                                                     
+                },
+                pluck="name"
+            )
 
             items = frappe.get_all("Outward Entry Items",
                 filters={
                     "container_name": container_name,
+                    "parent": ["in", parents],
                     "parenttype": "Outward Entry",
                     "crossing_item": 0,                                 
                 },
@@ -480,14 +828,7 @@ def create_container_sales_invoice(outward_entry):
                 order_by="creation ASC"
             )
 
-            # items = frappe.get_all("Outward Entry Items",
-            #     filters={
-            #         "container": container,
-            #         "parenttype": "Outward Entry",
-            #         "crossing_item": 0,                                 
-            #     },
-            #     fields=["qty", "parent"]
-            # )
+
             outward_items = []
 
             for oitem in items:
@@ -496,53 +837,54 @@ def create_container_sales_invoice(outward_entry):
                     oitem["date"] = frappe.db.get_value("Outward Entry", oitem["parent"], "date")
                     outward_items.append(oitem)
            
+            frappe.log_error("outward_items", outward_items)
             if not outward_items:
                 continue
-
-            outward_items.sort(key=lambda x: x["date"])
+            total_outward_qty = sum(out.qty for out in outward_items)
             default_company = frappe.defaults.get_user_default("Company")
             income_account = frappe.get_value("Company", default_company, "default_income_account")
 
-            if item.enable_875_rule or item.enable_75_rule:                           
-                outward_items = sorted(outward_items, key=lambda x: getdate(x["date"]))
 
+            if item.enable_875_rule or item.enable_75_rule:
                 dispatched_total = 0
                 if month_invoice_details:
                     dispatched_total = get_billed_qty(container)
-                
                 current_start_date = arrival_date
                 slabs = []
-
+                
                 final_outward_date = max(getdate(r["date"]) for r in outward_items)
-                duration_days = (final_outward_date - arrival_date).days + 1
+                final_duration_days = (final_outward_date - arrival_date).days + 1
                 commitment_days = item.minimum_commitmentnoofdays if not month_invoice_details else 0
-                effective_days = max(duration_days, commitment_days)                                
-                if not month_invoice_details and item.minimum_commitmentnoofdays:
-                    final_invoice_date = max(final_outward_date, arrival_date + timedelta(days=item.minimum_commitmentnoofdays - 1))
-                else:
-                    final_invoice_date = final_outward_date
-
                 for idx, row in enumerate(outward_items):
-                    current_date = getdate(row["date"])
-                   
+                    outward_date = getdate(row["date"])
+                    duration_days = (outward_date - current_start_date).days + 1
                     dispatched_before_current = dispatched_total   
                     dispatched_total += row["qty"]
                     dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0
-                    
-                    if item.enable_875_rule and dispatched_percent >= 87.5 and (duration_days>commitment_days):
-                        rate = item.after_875discounted_rate
-                        slab_type = "87.5"
-                    elif item.enable_75_rule and dispatched_percent >= 75 and (duration_days>commitment_days):
+
+                    if not final_duration_days<commitment_days and duration_days<commitment_days and idx==0 :
+                        frappe.log_error("commitment_days", commitment_days)                       
+                        outward_date = arrival_date + timedelta(days=commitment_days-1)
+                        frappe.log_error("outward_date", outward_date)
+                        
+
+                    if item.enable_75_rule and dispatched_percent >= 75 and (final_duration_days>commitment_days):
                         rate = item.after_75_discounted_rate
                         slab_type = "75"
+                    elif item.enable_875_rule and dispatched_percent >= 87.5 and (final_duration_days>commitment_days):
+                        rate = item.after_875discounted_rate
+                        slab_type = "87.5"                    
                     else:
                         rate = item.rate
-                        slab_type = "normal"
-                    
-                    if idx + 1 < len(outward_items):
-                        next_date = getdate(outward_items[idx]["date"])
-                    else:
-                        next_date = final_invoice_date                 
+                        slab_type = "0"
+
+                    # if idx + 1 < len(outward_items):
+                    #     next_date = getdate(outward_items[idx]["date"])
+                    #     frappe.log_error("next_date1", next_date)
+                    # else:
+                    next_date = outward_date
+                    frappe.log_error("next_date2", next_date)
+
                     if next_date < current_start_date:
                         continue
 
@@ -554,9 +896,10 @@ def create_container_sales_invoice(outward_entry):
                     })
 
                     current_start_date = next_date + timedelta(days=1)
-               
+
                 item_name = frappe.get_value("Item", item.service_type, "item_name")                
                 merged_slabs = []
+                frappe.log_error("slabs", slabs)
                 for slab in slabs:
                     if not merged_slabs:
                         merged_slabs.append(slab)
@@ -585,11 +928,8 @@ def create_container_sales_invoice(outward_entry):
                         "custom_invoice_type": "Immediate Billing",                        
                     })
 
-
-            
-            if not item.enable_875_rule and not item.enable_75_rule:
-                final_outward_date = max(getdate(r["date"]) for r in outward_items)
-                actual_last_outward_date = final_outward_date
+            if not item.enable_875_rule and not item.enable_75_rule:               
+                actual_last_outward_date = max(getdate(r["date"]) for r in outward_items)
                 duration_days = (actual_last_outward_date - arrival_date).days + 1
                 commitment_days = item.minimum_commitmentnoofdays if not month_invoice_details else 0
                 effective_days = max(duration_days, commitment_days) 
@@ -638,62 +978,8 @@ def create_container_sales_invoice(outward_entry):
         inward.invoice_generated = 1
         inward.save()
         
-        return si.name
+        return si.name            
 
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Container Invoice Generation Failed")
-        frappe.throw("An error occurred while generating the container invoice.")
-
-
-def get_monthly_invoice(container):
-    try:
-        frappe.log_error("row", container)
-
-        invoice_items = frappe.get_all(
-            "Sales Invoice Item",
-            filters={
-                "custom_container": container,
-                "parenttype": "Sales Invoice",
-                "custom_invoice_type": "Monthly Billing"
-            },
-            fields=["name", "creation", "custom_bill_from_date", "custom_bill_to_date","custom_container_status"],
-            order_by="creation desc",
-            limit=1
-        )
-
-        if invoice_items:
-            return invoice_items[0]
-        else:
-            return None
-
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "get_monthly_invoice error")
-        return None
-
-
-    
-def get_billed_qty(container):
-    try:
-        items = frappe.get_all(
-            "Outward Entry Items",
-            filters={
-                "container": container,
-                "parenttype": "Outward Entry",
-                "crossing_item": 0,
-            },
-            fields=["qty", "parent"]
-        )
-
-        total_qty = 0
-
-        for item in items:
-            billed = frappe.db.get_value("Outward Entry", item["parent"], "billed")
-            if billed:
-                total_qty += item["qty"] or 0
-
-        return total_qty
-
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "get_billed_qty error")
-        return 0
-
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "create_container_sales_invoice error")
+        return
