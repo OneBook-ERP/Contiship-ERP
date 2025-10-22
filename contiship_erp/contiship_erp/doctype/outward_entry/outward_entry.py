@@ -12,7 +12,7 @@ class OutwardEntry(Document):
         self.calculate_available_space()
 
     # def on_update_after_submit(self):
-    #     frappe.enqueue("contiship_erp.contiship_erp.doctype.outward_entry.outward_entry.create_container_sales_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", outward_entry=self.name)
+    #     frappe.enqueue("contiship_erp.contiship_erp.doctype.outward_entry.outward_entry.container_invoice", queue='default', job_name=f"Create Sales Invoice for {self.name}", outward_entry=self.name)
          
 
     def on_submit(self):        

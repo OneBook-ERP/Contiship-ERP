@@ -22,6 +22,7 @@
   "container_feet",
   "square_feet_size",
   "additional_sqft_size",
+  "lcl_type",
   "column_break_yito",
   "add_on_service"
  ],
@@ -52,6 +53,7 @@
   },
   {
    "columns": 2,
+   "default": "0",
    "fieldname": "minimum_commitmentnoofdays",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -141,13 +143,18 @@
    "fieldname": "additional_sqft_size",
    "fieldtype": "Int",
    "label": "Additional Sqft Size"
+  },
+  {
+   "fieldname": "lcl_type",
+   "fieldtype": "Data",
+   "label": "LCL Type"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-05 19:13:08.731533",
+ "modified": "2025-10-22 18:45:50.297152",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Customer Traffic Config",
