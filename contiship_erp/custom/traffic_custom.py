@@ -497,7 +497,7 @@ def generate_monthly_container_invoices(now=None):
                             dispatched_total += row["qty"]
                             dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0
 
-                            if not final_duration_days<commitment_days and duration_days<commitment_days and idx==0 :
+                            if duration_days<commitment_days and idx==0 :
                                 frappe.log_error("commitment_days", commitment_days)                       
                                 outward_date = arrival_date + timedelta(days=commitment_days-1)
                                 frappe.log_error("outward_date", outward_date)

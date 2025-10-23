@@ -65,7 +65,7 @@ def create_sales_invoice(inward_entry):
     sales_invoice.custom_reference_docname = inward_entry.name
     sales_invoice.custom_invoice_type = "Handling"
     sales_invoice.custom_consignment = inward_entry.boeinvoice_no
-    sales_invoice.custom_inward_date = inward_entry.arrival_date
+    sales_invoice.custom_inward_date = inward_entry.sales_invoice_inward_date
 
     for row in inward_entry.add_on_services_inward:
         if not row.add_on_item:
