@@ -122,7 +122,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-16 00:38:20.593997",
+ "modified": "2025-10-23 14:13:45.785486",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Outward Entry",
@@ -144,7 +144,7 @@
  ],
  "row_format": "Dynamic",
  "search_fields": "boeinvoice_no",
- "sort_field": "modified",
+ "sort_field": "creation",
  "sort_order": "DESC",
  "states": []
 }

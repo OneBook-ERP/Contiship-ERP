@@ -150,6 +150,7 @@
    "label": "Storage Bill"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "sales_invoice_inward_date",
    "fieldtype": "Date",
    "hidden": 1,
@@ -170,7 +171,7 @@
    "link_fieldname": "consignment"
   }
  ],
- "modified": "2025-10-16 11:58:25.728487",
+ "modified": "2025-10-23 14:13:07.925332",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
@@ -192,7 +193,7 @@
  ],
  "row_format": "Dynamic",
  "search_fields": "boeinvoice_no",
- "sort_field": "modified",
+ "sort_field": "creation",
  "sort_order": "DESC",
  "states": []
 }

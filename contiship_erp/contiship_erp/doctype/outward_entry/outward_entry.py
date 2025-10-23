@@ -649,19 +649,30 @@ def get_inward_html_table(customer):
 #         frappe.throw("An error occurred while generating the container invoice.")
 
 
-def get_monthly_invoice(container,container_name):
+def get_monthly_invoice(container, container_name, consignment):
     try:
         frappe.log_error("row", container)
 
+        # Get all sales invoices that match the consignment
+        invoices = frappe.get_all(
+            "Sales Invoice",
+            filters={"custom_consignment": consignment},
+            pluck="name"
+        )
+
+        if not invoices:
+            return None
+
+        # Get the latest Sales Invoice Item for those invoices
         invoice_items = frappe.get_all(
             "Sales Invoice Item",
             filters={
-                # "custom_container": container,
                 "custom_container_name": container_name,
                 "parenttype": "Sales Invoice",
-                "custom_invoice_type": "Monthly Billing"
+                "parent": ["in", invoices],  # filter by parent
+                "custom_invoice_type": "Monthly Billing",
             },
-            fields=["name", "creation", "custom_bill_from_date", "custom_bill_to_date","custom_container_status"],
+            fields=["name", "creation", "custom_bill_from_date", "custom_bill_to_date", "custom_container_status"],
             order_by="creation desc",
             limit=1
         )
@@ -674,6 +685,7 @@ def get_monthly_invoice(container,container_name):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "get_monthly_invoice error")
         return None
+
 
 
     
@@ -801,7 +813,7 @@ def container_invoice(outward_entry):
             container = data["name"]
             frappe.log_error(f"inward_qty: {inward_qty}")
 
-            month_invoice_details = get_monthly_invoice(container,container_name)
+            month_invoice_details = get_monthly_invoice(container,container_name,inward.name)
             if month_invoice_details:
                 if month_invoice_details["custom_container_status"] == "Completed":
                     continue
@@ -853,11 +865,16 @@ def container_invoice(outward_entry):
                 slabs = []
                 
                 final_outward_date = max(getdate(r["date"]) for r in outward_items)
+                frappe.log_error("final_outward_date", final_outward_date)
+                frappe.log_error("arrival_date", arrival_date)
                 final_duration_days = (final_outward_date - arrival_date).days + 1
+                frappe.log_error("final_duration_days", final_duration_days)
                 commitment_days = item.minimum_commitmentnoofdays if not month_invoice_details else 0
+                frappe.log_error("commitment_days22", commitment_days)
                 for idx, row in enumerate(outward_items):
                     outward_date = getdate(row["date"])
                     duration_days = (outward_date - current_start_date).days + 1
+                    frappe.log_error("duration_dayzzzs", duration_days)
                     dispatched_before_current = dispatched_total   
                     dispatched_total += row["qty"]
                     dispatched_percent = (dispatched_before_current / inward_qty) * 100 if inward_qty else 0

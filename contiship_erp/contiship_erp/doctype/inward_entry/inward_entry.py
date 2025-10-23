@@ -3,6 +3,8 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import formatdate
+
 
 
 class InwardEntry(Document):
@@ -22,21 +24,31 @@ class InwardEntry(Document):
                 frappe.throw("Sqft Based tariff is not set for this Inward Entry tariff.")
 
         else:
-            for items in self.inward_entry_items:
-                if items.container_size == "20" and not items.rate:
-                    if not any(t.rent_type == "Container Based" and t.container_feet == 20 for t in self.customer_tariff_config):
-                        frappe.throw("20 Ft Container Based tariff is not set for this Inward Entry tariff.")
-                elif items.container_size == "40" and not items.rate:
-                    if not any(t.rent_type == "Container Based" and t.container_feet == 40 for t in self.customer_tariff_config):
-                        frappe.throw("40 Ft Container Based tariff is not set for this Inward Entry tariff.")
-                elif items.container_size == "LCL" and not items.rate:
-                    if not any(t.rent_type == "LCL" for t in self.customer_tariff_config):
-                        frappe.throw("LCL Based tariff is not set for this Inward Entry tariff.")
+            if self.inward_entry_items:
+                for item in self.inward_entry_items:
+                    if not item.rate:
+                        frappe.throw(f"Rate is not set for this Inward Entry item. Container: <b>{item.container}</b> arrival at {formatdate(item.container_arrival_date)}")
+
+                    if not item.service_type:
+                        frappe.throw(f"Tariff Service is not set for this Inward Entry item. Container: <b>{item.container}</b> arrival at {formatdate(item.container_arrival_date)}")
+
+            # for items in self.inward_entry_items:
+            #     if items.container_size == "20" and not items.rate:
+            #         if not any(t.rent_type == "Container Based" and t.container_feet == 20 for t in self.customer_tariff_config):
+            #             frappe.throw("20 Ft Container Based tariff is not set for this Inward Entry tariff.")
+            #     elif items.container_size == "40" and not items.rate:
+            #         if not any(t.rent_type == "Container Based" and t.container_feet == 40 for t in self.customer_tariff_config):
+            #             frappe.throw("40 Ft Container Based tariff is not set for this Inward Entry tariff.")
+            #     elif items.container_size == "LCL" and not items.rate:
+            #         if not any(t.rent_type == "LCL" for t in self.customer_tariff_config):
+            #             frappe.throw("LCL Based tariff is not set for this Inward Entry tariff.")
 
 
     def set_invoice_date(self):
         if self.inward_entry_items:
             self.sales_invoice_inward_date = self.inward_entry_items[0].container_arrival_date
+            self.save()
+            frappe.db.commit()
 
                     
 
