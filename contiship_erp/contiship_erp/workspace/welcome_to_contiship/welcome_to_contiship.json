@@ -13,7 +13,7 @@
    "label": "Outward Entry"
   }
  ],
- "content": "[{\"id\":\"OttwQQUFJu\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Contiship</span>\",\"col\":12}},{\"id\":\"xJ2O_Qjj-l\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"yXIha74tPR\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"XCKr78c2Ef\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"SBNEK7xof1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item\",\"col\":3}},{\"id\":\"t6Kmysd-or\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inward Entry\",\"col\":3}},{\"id\":\"eGqn7Tw7xg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Outward Entry\",\"col\":3}},{\"id\":\"QOqgeIi00O\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Invoice\",\"col\":3}},{\"id\":\"EQnEvlQEWZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment\",\"col\":3}},{\"id\":\"Yl3pwz5Maq\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"jmjBEkmFG4\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"sSRNbYsUBI\",\"type\":\"card\",\"data\":{\"card_name\":\"Accounts\",\"col\":4}},{\"id\":\"THCCBelNv-\",\"type\":\"card\",\"data\":{\"card_name\":\"Stock\",\"col\":4}},{\"id\":\"XYkCX4g-cZ\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ef6UMzAQnE\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Inward Entry\",\"col\":6}},{\"id\":\"yplP_dQXb6\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Outward Entry\",\"col\":6}},{\"id\":\"SA5He7P6-4\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Customer Invoice\",\"col\":12}}]",
+ "content": "[{\"id\":\"OttwQQUFJu\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Contiship</span>\",\"col\":12}},{\"id\":\"xJ2O_Qjj-l\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"yXIha74tPR\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"XCKr78c2Ef\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"SBNEK7xof1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item\",\"col\":3}},{\"id\":\"t6Kmysd-or\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inward Entry\",\"col\":3}},{\"id\":\"eGqn7Tw7xg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Outward Entry\",\"col\":3}},{\"id\":\"puCgkZ3ZNV\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Non GST Invoice\",\"col\":3}},{\"id\":\"oAKdwoGmiO\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"GST Invoice\",\"col\":3}},{\"id\":\"VxrNEOQm2T\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Credit Note\",\"col\":3}},{\"id\":\"EQnEvlQEWZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment\",\"col\":3}},{\"id\":\"Yl3pwz5Maq\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"jmjBEkmFG4\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"sSRNbYsUBI\",\"type\":\"card\",\"data\":{\"card_name\":\"Accounts\",\"col\":4}},{\"id\":\"THCCBelNv-\",\"type\":\"card\",\"data\":{\"card_name\":\"Stock\",\"col\":4}},{\"id\":\"XYkCX4g-cZ\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ef6UMzAQnE\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Inward Entry\",\"col\":6}},{\"id\":\"yplP_dQXb6\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Outward Entry\",\"col\":6}},{\"id\":\"SA5He7P6-4\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Customer Invoice\",\"col\":12}}]",
  "creation": "2025-06-10 23:39:06.191757",
  "custom_blocks": [],
  "docstatus": 0,
@@ -105,7 +105,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-08-05 10:58:30.571592",
+ "modified": "2025-10-23 17:22:34.878467",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Welcome to Contiship",
@@ -120,18 +120,18 @@
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Sales Invoice",
-   "link_to": "Sales Invoice",
+   "label": "Inward Entry",
+   "link_to": "Inward Entry",
    "stats_filter": "[]",
    "type": "DocType"
   },
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Inward Entry",
-   "link_to": "Inward Entry",
-   "stats_filter": "[]",
-   "type": "DocType"
+   "label": "GST Invoice",
+   "link_to": "GST Invoice",
+   "report_ref_doctype": "Sales Invoice",
+   "type": "Report"
   },
   {
    "color": "Grey",
@@ -156,6 +156,22 @@
    "link_to": "Outward Entry",
    "stats_filter": "[]",
    "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Non GST Invoice",
+   "link_to": "Non GST Invoice",
+   "report_ref_doctype": "Sales Invoice",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Credit Note",
+   "link_to": "Credit Note",
+   "report_ref_doctype": "Sales Invoice",
+   "type": "Report"
   },
   {
    "color": "Green",

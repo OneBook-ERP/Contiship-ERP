@@ -1,5 +1,7 @@
 $(document).ready(function () { 
-    $('.layout-side-section, .sidebar-toggle-btn').hide();  
+
+
+    $('.layout-side-section, .sidebar-toggle-btn').hide(); 
 
     let home_page = "";
 
