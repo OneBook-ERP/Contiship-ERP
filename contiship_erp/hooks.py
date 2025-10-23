@@ -150,20 +150,23 @@ app_include_js = [
     "/assets/contiship_erp/js/sidebar.js",  
 ]
 
+
 doctype_js = {
     "Item" : "public/js/item.js",
-    "Customer" : "public/js/customer.js"  
+    "Customer" : "public/js/customer.js",
+    "Sales Invoice" : "public/js/sales_invoice.js" 
 }
 
 doctype_list_js = {
-    "Sales Invoice" : "public/js/sales_invoice.js"
+    "Sales Invoice" : "public/js/sales_invoice_list.js"
 }
 
 doc_events = {
 	"Sales Invoice": {
         "before_submit": "contiship_erp.custom.traffic_custom.sales_invoice_before_submit",
 		"on_submit": "contiship_erp.custom.traffic_custom.sales_invoice_on_submit",
-        "after_insert": "contiship_erp.custom.traffic_custom.sales_invoice_after_insert"
+        "after_insert": "contiship_erp.custom.traffic_custom.sales_invoice_after_insert",
+        "autoname": "contiship_erp.custom.traffic_custom.sales_invoice_autoname"
 	}
 }
 
