@@ -147,14 +147,15 @@
   {
    "fieldname": "lcl_type",
    "fieldtype": "Data",
-   "label": "LCL Type"
+   "label": "LCL Type",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-22 18:45:50.297152",
+ "modified": "2025-10-22 18:51:25.129687",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Customer Traffic Config",
