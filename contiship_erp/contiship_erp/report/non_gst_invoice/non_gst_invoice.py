@@ -11,10 +11,7 @@ def execute(filters=None):
 def get_columns():
     return [
         {"label": "Invoice No", "fieldname": "name", "fieldtype": "Link", "options": "Sales Invoice", "width": 150},
-        {"label": "Inward Entry", "fieldname": "custom_reference_docname", "fieldtype": "Link", "options": "Inward Entry", "width": 150},
-        {"label": "Inward Date", "fieldname": "custom_inward_date", "fieldtype": "Date", "width": 120},
         {"label": "Posting Date", "fieldname": "posting_date", "fieldtype": "Date", "width": 120},
-        {"label": "Created On", "fieldname": "creation", "fieldtype": "Date", "width": 140},
         {"label": "Customer", "fieldname": "customer", "fieldtype": "Link", "options": "Customer", "width": 250},
         {"label": "Consignment", "fieldname": "custom_consignment", "width": 150},
         {"label": "Taxable Amount", "fieldname": "total", "fieldtype": "Currency", "width": 130},
@@ -23,6 +20,9 @@ def get_columns():
         {"label": "Outstanding", "fieldname": "outstanding_amount", "fieldtype": "Currency", "width": 130},
         {"label": "Status", "fieldname": "status", "width": 120},
         {"label": "Invoice Type", "fieldname": "custom_invoice_type", "width": 140},
+        {"label": "Inward Entry", "fieldname": "custom_reference_docname", "fieldtype": "Link", "options": "Inward Entry", "width": 150},
+        {"label": "Inward Date", "fieldname": "custom_inward_date", "fieldtype": "Date", "width": 120},
+        {"label": "Created On", "fieldname": "creation", "fieldtype": "Date", "width": 140},
     ]
 
 def get_data(filters):

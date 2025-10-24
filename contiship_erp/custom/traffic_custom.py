@@ -108,7 +108,7 @@ def sales_invoice_on_submit(doc, method):
 
     new_name = make_autoname(f"GWH/{current}-{next_year}/.###")
    
-    if doc.name != new_name:
+    if doc.name != new_name and doc.is_return == 0:
         rename_doc("Sales Invoice", doc.name, new_name, force=True)
         frappe.db.set_value("Sales Invoice", new_name, "name", new_name)
         frappe.db.commit()
@@ -121,7 +121,7 @@ def sales_invoice_autoname(doc, method):
         year = datetime.datetime.now().year
         current = str(year)[-2:]
         next_year = str(year + 1)[-2:]    
-        doc.name = make_autoname(f"CH/{current}-{next_year}/.###")   
+        doc.name = make_autoname(f"CN/{current}-{next_year}/.###")   
 
 
 def sales_invoice_after_insert(doc, method):    
