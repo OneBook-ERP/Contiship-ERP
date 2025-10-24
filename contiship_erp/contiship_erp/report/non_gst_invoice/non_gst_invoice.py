@@ -72,5 +72,5 @@ def get_data(filters):
         FROM `tabSales Invoice` si
         WHERE si.docstatus = 0
         {conditions}
-        ORDER BY si.creation DESC
+        ORDER BY si.name DESC
     """, values, as_dict=1)
