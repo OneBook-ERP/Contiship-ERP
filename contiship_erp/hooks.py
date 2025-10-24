@@ -146,9 +146,9 @@ app_license = "mit"
 # }
 
 
-app_include_js = [
-    "/assets/contiship_erp/js/sidebar.js",  
-]
+# app_include_js = [
+#     "/assets/contiship_erp/js/sidebar.js",  
+# ]
 
 
 doctype_js = {
