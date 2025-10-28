@@ -24,8 +24,10 @@ class InwardEntry(Document):
                 frappe.throw("Sqft Based tariff is not set for this Inward Entry tariff.")
 
         else:
-            if self.inward_entry_items:
+            if self.inward_entry_items and self.storage_bill and self.service_type == "Others":
                 for item in self.inward_entry_items:
+                    if item.crossing_item:
+                        continue
                     if not item.rate:
                         frappe.throw(f"Rate is not set for this Inward Entry item. Container: <b>{item.container}</b> arrival at {formatdate(item.container_arrival_date)}")
 
