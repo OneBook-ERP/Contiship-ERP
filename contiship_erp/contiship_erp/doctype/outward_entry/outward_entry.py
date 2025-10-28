@@ -766,7 +766,8 @@ def container_invoice(outward_entry):
             parents = frappe.get_all("Outward Entry",
                 filters={
                     "consignment": inward.name,
-                    "docstatus": 1,                                   
+                    "docstatus": 1, 
+                    "name": ["!=", outward.name]                                  
                 },
                 pluck="name"
             )
@@ -783,13 +784,15 @@ def container_invoice(outward_entry):
             )
             frappe.log_error("outward_items", outward_items)
 
-            total_outward_qty = sum(out.qty for out in outward_items)
-            frappe.log_error("total_outward_qty", total_outward_qty)
+            total_outward_qty = sum(out.qty for out in outward_items) if outward_items else 0
+            frappe.log_error("total_outward_qty1", total_outward_qty)
 
             if outward:
                 for row in outward.items:
                     if row.container_name == container_name:
                         total_outward_qty += row.qty
+
+            frappe.log_error("total_outward_qty2", total_outward_qty)
 
             if total_outward_qty < inward_qty:
                 containers_not_fully_outwarded.append(container_name)

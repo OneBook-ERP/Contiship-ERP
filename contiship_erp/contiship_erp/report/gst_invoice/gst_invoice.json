@@ -1,5 +1,5 @@
 {
- "add_total_row": 0,
+ "add_total_row": 1,
  "add_translate_data": 0,
  "columns": [],
  "creation": "2025-10-23 16:06:57.027714",
@@ -10,7 +10,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2025-10-23 16:08:05.301240",
+ "modified": "2025-10-25 16:30:01.448565",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "GST Invoice",
