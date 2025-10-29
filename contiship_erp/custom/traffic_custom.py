@@ -416,6 +416,16 @@ def generate_monthly_container_invoices(now=None):
                 container = data["name"]
                 frappe.log_error(f"inward_qty: {inward_qty}")
 
+
+                month_invoice_details = get_monthly_invoice(container,container_name,inward.name)
+                if month_invoice_details:
+                    if month_invoice_details["custom_container_status"] == "Completed":
+                        continue
+                    if month_invoice_details["custom_bill_to_date"]:
+                        arrival_date = getdate(month_invoice_details["custom_bill_to_date"]) + timedelta(days=1)
+                else:
+                    arrival_date = getdate(data["arrival_date"])
+
             # for item in inward.inward_entry_items:
                
                
@@ -759,3 +769,46 @@ def generate_monthly_container_invoices(now=None):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Container Invoice Monthly Generation Failed")
         frappe.throw("An error occurred while generating the container monthly invoice.")
+
+
+
+
+
+
+
+def get_monthly_invoice(container, container_name, consignment):
+    try:
+        frappe.log_error("row", container)
+
+        # Get all sales invoices that match the consignment
+        invoices = frappe.get_all(
+            "Sales Invoice",
+            filters={"custom_consignment": consignment},
+            pluck="name"
+        )
+
+        if not invoices:
+            return None
+
+        # Get the latest Sales Invoice Item for those invoices
+        invoice_items = frappe.get_all(
+            "Sales Invoice Item",
+            filters={
+                "custom_container_name": container_name,
+                "parenttype": "Sales Invoice",
+                "parent": ["in", invoices],  # filter by parent
+                "custom_invoice_type": "Monthly Billing",
+            },
+            fields=["name", "creation", "custom_bill_from_date", "custom_bill_to_date", "custom_container_status"],
+            order_by="creation desc",
+            limit=1
+        )
+
+        if invoice_items:
+            return invoice_items[0]
+        else:
+            return None
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "get_monthly_invoice error")
+        return None
