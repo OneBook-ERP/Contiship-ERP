@@ -768,7 +768,7 @@ def generate_monthly_container_invoices(now=None):
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Container Invoice Monthly Generation Failed")
-        frappe.throw("An error occurred while generating the container monthly invoice.")
+        frappe.log_error("An error occurred while generating the container monthly invoice.")
 
 
 
