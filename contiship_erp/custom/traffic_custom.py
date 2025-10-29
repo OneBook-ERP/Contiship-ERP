@@ -516,7 +516,8 @@ def generate_monthly_container_invoices(now=None, start=None):
                         if item.enable_875_rule or item.enable_75_rule:
                             current_start_date = arrival_date
                             if month_invoice_details:
-                                dispatched_total = get_billed_qty(container)
+                                dispatched_total = get_billed_qty(container,container_name,consignment)
+                                frappe.log_error("wwdispatched_total", dispatched_total)
                             slabs = []
                     
                             final_outward_date = max(getdate(r["date"]) for r in outward_items)
@@ -594,8 +595,8 @@ def generate_monthly_container_invoices(now=None, start=None):
                                     "custom_bill_to_date": slab["to_date"],
                                     "custom_container": container,
                                     "custom_container_name": container_name,                      
-                                    "custom_container_status": "Completed",
-                                    "custom_invoice_type": "Immediate Billing",                        
+                                    "custom_container_status": "Completed" if dispatched_total >= inward_qty else "Partial",
+                                    "custom_invoice_type": "Monthly Billing",                        
                                 })
                                 all_dates.extend([slab['from_date'], slab['to_date']])
                                 prev_end = slab['to_date']
@@ -830,3 +831,38 @@ def get_monthly_invoice(container, container_name, consignment):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "get_monthly_invoice error")
         return None
+
+
+def get_billed_qty(container,container_name, consignment):
+    try:
+        outwards = frappe.get_all(
+            "Outward Entry",
+            filters={"consignment": consignment},
+            pluck="name"
+        )
+        if not outwards:
+            return 0
+
+        items = frappe.get_all(
+            "Outward Entry Items",
+            filters={
+                "container_name": container_name,
+                "parenttype": "Outward Entry",
+                "parent": ["in", outwards],
+                "crossing_item": 0,
+            },
+            fields=["qty", "parent"]
+        )
+
+        total_qty = 0
+
+        for item in items:
+            billed = frappe.db.get_value("Outward Entry", item["parent"], "billed")
+            if billed:
+                total_qty += item["qty"] or 0
+
+        return total_qty
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "get_billed_qty error")
+        return 0
