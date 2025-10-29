@@ -78,27 +78,30 @@ def get_data(filters):
                 FROM `tabOutward Entry Items` AS oed
                 JOIN `tabOutward Entry` AS oe ON oe.name = oed.parent
                 WHERE 
-                    oe.consignment = ie.name 
+                    oe.consignment = ie.name
                     AND oed.item = ied.item
-                    AND oed.container_name = ied.container
+                    AND oed.container = ied.name
+                    AND IFNULL(oed.grade, '') = IFNULL(ied.grade, '')
             ), 0) AS UNSIGNED) AS outward_qty,
             CAST(ied.qty - IFNULL((
                 SELECT SUM(oed.qty)
                 FROM `tabOutward Entry Items` AS oed
                 JOIN `tabOutward Entry` AS oe ON oe.name = oed.parent
                 WHERE 
-                    oe.consignment = ie.name 
+                    oe.consignment = ie.name
                     AND oed.item = ied.item
-                    AND oed.container_name = ied.container
+                    AND oed.container = ied.name
+                    AND IFNULL(oed.grade, '') = IFNULL(ied.grade, '')
             ), 0) AS UNSIGNED) AS available_qty,
             (
                 SELECT GROUP_CONCAT(CONCAT(oe.name, ' (', oed.qty, ')') ORDER BY oe.date DESC SEPARATOR ', ')
                 FROM `tabOutward Entry Items` AS oed
                 JOIN `tabOutward Entry` AS oe ON oe.name = oed.parent
                 WHERE 
-                    oe.consignment = ie.name 
+                    oe.consignment = ie.name
                     AND oed.item = ied.item
-                    AND oed.container_name = ied.container
+                    AND oed.container = ied.name
+                    AND IFNULL(oed.grade, '') = IFNULL(ied.grade, '')
             ) AS outward_entry_id,
             (
                 SELECT GROUP_CONCAT(CONCAT(si.name) ORDER BY si.posting_date DESC SEPARATOR ', ')
@@ -116,13 +119,15 @@ def get_data(filters):
                 FROM `tabOutward Entry Items` AS oed
                 JOIN `tabOutward Entry` AS oe ON oe.name = oed.parent
                 WHERE 
-                    oe.consignment = ie.name 
+                    oe.consignment = ie.name
                     AND oed.item = ied.item
-                    AND oed.container_name = ied.container
+                    AND oed.container = ied.name
+                    AND IFNULL(oed.grade, '') = IFNULL(ied.grade, '')
             ), 0) AS UNSIGNED) > 0
         ORDER BY
             ie.name DESC
     """, values, as_dict=1)
+
 
     # Format outward entries
     for row in rows:

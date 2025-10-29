@@ -5,6 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "from_start_date",
   "column_break_tkum",
   "create_monthly_billing",
   "column_break_ziim",
@@ -39,13 +40,19 @@
   {
    "fieldname": "column_break_uwrn",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "from_start_date",
+   "fieldtype": "Check",
+   "label": "From Start Date"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-04 19:07:45.074273",
+ "modified": "2025-10-29 13:59:40.451869",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Monthly Billing Settings",
