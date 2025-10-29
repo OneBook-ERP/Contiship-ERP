@@ -431,7 +431,7 @@ def generate_monthly_container_invoices(now=None, start=None):
                     frappe.log_error(f"inward_qty: {inward_qty}")
 
 
-                    month_invoice_details = get_monthly_invoice(container,container_name,inward.name)
+                    month_invoice_details = get_monthly_invoice(container, container_name, inward.name, inward.boeinvoice_no)
                     if month_invoice_details:
                         if month_invoice_details["custom_container_status"] == "Completed":
                             continue
@@ -516,7 +516,7 @@ def generate_monthly_container_invoices(now=None, start=None):
                         if item.enable_875_rule or item.enable_75_rule:
                             current_start_date = arrival_date
                             if month_invoice_details:
-                                dispatched_total = get_billed_qty(container,container_name,consignment)
+                                dispatched_total = get_billed_qty(container, container_name, inward.name, inward.boeinvoice_no)
                                 frappe.log_error("wwdispatched_total", dispatched_total)
                             slabs = []
                     
@@ -759,6 +759,20 @@ def generate_monthly_container_invoices(now=None, start=None):
                                     "custom_invoice_type": "Monthly Billing"
                                 })
                                 all_dates.extend([start_date, end_date])
+
+
+
+                frappe.log_error("Invoice Items Before Filter ", invoice_items)
+                removed_items = [item for item in invoice_items if item.get("qty", 0) == 0]
+                if removed_items:
+                    frappe.log_error(
+                        title="Removed Zero-Qty Invoice Items",
+                        message=frappe.as_json(removed_items)
+                    )
+                invoice_items = [item for item in invoice_items if item.get("qty", 0) != 0]
+                frappe.log_error("Invoice Items After Filter ", invoice_items)
+                if not invoice_items:
+                    frappe.log_error("No invoice items generated.")
                 
 
                 if invoice_items:
@@ -778,6 +792,8 @@ def generate_monthly_container_invoices(now=None, start=None):
 
                     inward.monthly_invoice_date = nowdate()
                     inward.save()
+
+                frappe.log_error("Monthly Invoice Created", si.name)
             
             return "Invoice Created"
 
@@ -795,14 +811,14 @@ def generate_monthly_container_invoices(now=None, start=None):
 
 
 
-def get_monthly_invoice(container, container_name, consignment):
+def get_monthly_invoice(container, container_name, inward, consignment):
     try:
         frappe.log_error("row", container)
 
         # Get all sales invoices that match the consignment
         invoices = frappe.get_all(
             "Sales Invoice",
-            filters={"custom_consignment": consignment},
+            filters={"custom_reference_docname": inward,"custom_consignment": consignment},
             pluck="name"
         )
 
@@ -815,13 +831,14 @@ def get_monthly_invoice(container, container_name, consignment):
             filters={
                 "custom_container_name": container_name,
                 "parenttype": "Sales Invoice",
-                "parent": ["in", invoices],  # filter by parent
+                "parent": ["in", invoices],
                 "custom_invoice_type": "Monthly Billing",
             },
             fields=["name", "creation", "custom_bill_from_date", "custom_bill_to_date", "custom_container_status"],
             order_by="creation desc",
             limit=1
         )
+        frappe.log_error("mm-invoice_items", invoice_items)
 
         if invoice_items:
             return invoice_items[0]
@@ -833,11 +850,12 @@ def get_monthly_invoice(container, container_name, consignment):
         return None
 
 
-def get_billed_qty(container,container_name, consignment):
+    
+def get_billed_qty(container,container_name, inward, consignment):
     try:
         outwards = frappe.get_all(
             "Outward Entry",
-            filters={"consignment": consignment},
+            filters={"consignment": inward,"boeinvoice_no": consignment},
             pluck="name"
         )
         if not outwards:
