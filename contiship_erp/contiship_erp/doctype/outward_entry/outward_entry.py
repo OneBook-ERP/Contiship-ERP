@@ -689,13 +689,22 @@ def get_monthly_invoice(container, container_name, consignment):
 
 
     
-def get_billed_qty(container):
+def get_billed_qty(container,container_name, consignment):
     try:
+        outwards = frappe.get_all(
+            "Outward Entry",
+            filters={"consignment": consignment},
+            pluck="name"
+        )
+        if not outwards:
+            return 0
+
         items = frappe.get_all(
             "Outward Entry Items",
             filters={
-                "container": container,
+                "container_name": container_name,
                 "parenttype": "Outward Entry",
+                "parent": ["in", outwards],
                 "crossing_item": 0,
             },
             fields=["qty", "parent"]
@@ -817,6 +826,7 @@ def container_invoice(outward_entry):
             frappe.log_error(f"inward_qty: {inward_qty}")
 
             month_invoice_details = get_monthly_invoice(container,container_name,inward.name)
+            frappe.log_error("month_invoice_details", month_invoice_details)
             if month_invoice_details:
                 if month_invoice_details["custom_container_status"] == "Completed":
                     continue
@@ -824,6 +834,8 @@ def container_invoice(outward_entry):
                     arrival_date = getdate(month_invoice_details["custom_bill_to_date"]) + timedelta(days=1)
             else:
                 arrival_date = getdate(item.container_arrival_date)
+
+            frappe.log_error("mmarrival_date", arrival_date)
 
             parents = frappe.get_all("Outward Entry",
                 filters={
@@ -863,7 +875,7 @@ def container_invoice(outward_entry):
             if item.enable_875_rule or item.enable_75_rule:
                 dispatched_total = 0
                 if month_invoice_details:
-                    dispatched_total = get_billed_qty(container)
+                    dispatched_total = get_billed_qty(container,container_name,inward.name)
                 current_start_date = arrival_date
                 slabs = []
                 
