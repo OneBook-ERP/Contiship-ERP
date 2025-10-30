@@ -649,14 +649,14 @@ def get_inward_html_table(customer):
 #         frappe.throw("An error occurred while generating the container invoice.")
 
 
-def get_monthly_invoice(container, container_name, consignment):
+def get_monthly_invoice(container, container_name, inward, consignment):
     try:
         frappe.log_error("row", container)
 
         # Get all sales invoices that match the consignment
         invoices = frappe.get_all(
             "Sales Invoice",
-            filters={"custom_consignment": consignment},
+            filters={"custom_reference_docname": inward,"custom_consignment": consignment},
             pluck="name"
         )
 
@@ -669,13 +669,14 @@ def get_monthly_invoice(container, container_name, consignment):
             filters={
                 "custom_container_name": container_name,
                 "parenttype": "Sales Invoice",
-                "parent": ["in", invoices],  # filter by parent
+                "parent": ["in", invoices],
                 "custom_invoice_type": "Monthly Billing",
             },
             fields=["name", "creation", "custom_bill_from_date", "custom_bill_to_date", "custom_container_status"],
             order_by="creation desc",
             limit=1
         )
+        frappe.log_error("mm-invoice_items", invoice_items)
 
         if invoice_items:
             return invoice_items[0]
@@ -689,11 +690,11 @@ def get_monthly_invoice(container, container_name, consignment):
 
 
     
-def get_billed_qty(container,container_name, consignment):
+def get_billed_qty(container,container_name, inward, consignment):
     try:
         outwards = frappe.get_all(
             "Outward Entry",
-            filters={"consignment": consignment},
+            filters={"consignment": inward,"boeinvoice_no": consignment},
             pluck="name"
         )
         if not outwards:
@@ -742,8 +743,6 @@ def container_invoice(outward_entry):
         if inward.service_type == "Sqft Based" or not inward.storage_bill:
             return
 
-
-        # Check the container State
         
 
         containers_not_fully_outwarded = []
@@ -825,8 +824,8 @@ def container_invoice(outward_entry):
             container = data["name"]
             frappe.log_error(f"inward_qty: {inward_qty}")
 
-            month_invoice_details = get_monthly_invoice(container,container_name,inward.name)
-            frappe.log_error("month_invoice_details", month_invoice_details)
+            month_invoice_details = get_monthly_invoice(container,container_name,inward.name,inward.boeinvoice_no)
+            frappe.log_error("month_invoice_details", frappe.as_json(month_invoice_details))
             if month_invoice_details:
                 if month_invoice_details["custom_container_status"] == "Completed":
                     continue
@@ -875,7 +874,7 @@ def container_invoice(outward_entry):
             if item.enable_875_rule or item.enable_75_rule:
                 dispatched_total = 0
                 if month_invoice_details:
-                    dispatched_total = get_billed_qty(container,container_name,inward.name)
+                    dispatched_total = get_billed_qty(container, container_name, inward.name, inward.boeinvoice_no)
                 current_start_date = arrival_date
                 slabs = []
                 
@@ -991,7 +990,15 @@ def container_invoice(outward_entry):
                     
                 })
 
-        frappe.log_error("invoice_items", invoice_items)
+        frappe.log_error("Invoice Items Before Filter ", invoice_items)
+        removed_items = [item for item in invoice_items if item.get("qty", 0) == 0]
+        if removed_items:
+            frappe.log_error(
+                title="Removed Zero-Qty Invoice Items",
+                message=frappe.as_json(removed_items)
+            )
+        invoice_items = [item for item in invoice_items if item.get("qty", 0) != 0]
+        frappe.log_error("Invoice Items After Filter ", invoice_items)
 
         if not invoice_items:
             frappe.log_error("No invoice items generated.")
@@ -1009,6 +1016,8 @@ def container_invoice(outward_entry):
 
         inward.invoice_generated = 1
         inward.save()
+
+        frappe.log_error("Immediate Invoice Created", si.name)
         
         return si.name            
 
