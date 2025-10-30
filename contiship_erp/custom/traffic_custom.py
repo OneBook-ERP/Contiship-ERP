@@ -343,6 +343,7 @@ def create_monthly_additional_sqft_invoice(end=None):
 
 @frappe.whitelist()
 def generate_monthly_container_invoices(now=None, start=None):
+    frappe.log_error(start)
     try:
         if not frappe.db.exists("UOM", {"name": "Day"}):
             frappe.get_doc({
@@ -367,7 +368,7 @@ def generate_monthly_container_invoices(now=None, start=None):
 
         }, fields=["name", "monthly_invoice_date","arrival_date"])
         
-        if start == 1:
+        if start:            
             filtered_entries = [
                 entry for entry in inward_entries
                 if (
@@ -798,7 +799,7 @@ def generate_monthly_container_invoices(now=None, start=None):
             return "Invoice Created"
 
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), "Inward Failed{inward.name}")
+            frappe.log_error(frappe.get_traceback(), f"Inward Failed{inward.name}")
             
 
     except Exception as e:

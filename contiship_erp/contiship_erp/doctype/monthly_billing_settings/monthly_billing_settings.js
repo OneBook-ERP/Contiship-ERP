@@ -2,13 +2,12 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Monthly Billing Settings", {
-	create_monthly_billing(frm) {
-        console.log(frm.doc.from_start_date)
+	create_monthly_billing(frm) {        
         frappe.call({
             method: "contiship_erp.custom.traffic_custom.generate_monthly_container_invoices",
             args: {                
                 "now": 1,
-                "from_start_date": frm.doc.from_start_date
+                "start": frm.doc.from_start_date
             },
             freeze: true,
             freeze_message: "Creating Monthly Billing...",

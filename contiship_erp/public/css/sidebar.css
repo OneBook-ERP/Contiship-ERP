@@ -1,0 +1,186 @@
+/* ✅ Full Custom Sidebar CSS (Blue Theme with Dark Mode) */
+
+/* Remove Frappe default container limits */
+.container-xl, .container-lg, .container-md, .container-sm, .container {
+    max-width: 100%;
+}
+
+/* Sidebar width variable */
+:root {
+    --fs-sidebar-w: 200px;
+}
+
+/* 🌞 Light Theme */
+html[data-theme="light"] {
+    --fs-bg: linear-gradient(180deg, #1e3a8a 0%, #1d4ed8 100%);
+    --fs-text: #ffffff;
+    --fs-title: #bfdbfe;
+    --fs-hover-bg: #2563eb;
+    --fs-hover-text: #eff6ff;
+    --fs-active-bg: #3b82f6;
+    --fs-section: #93c5fd;
+    --fs-btn-bg: #60a5fa;
+    --fs-btn-text: #ffffff;
+    --fs-border: rgba(255, 255, 255, 0.2);
+}
+
+/* 🌙 Dark Theme */
+html[data-theme="dark"] {
+    --fs-bg: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%);
+    --fs-text: #e2e8f0;
+    --fs-title: #93c5fd;
+    --fs-hover-bg: #1e40af;
+    --fs-hover-text: #ffffff;
+    --fs-active-bg: #2563eb;
+    --fs-section: #60a5fa;
+    --fs-btn-bg: #3b82f6;
+    --fs-btn-text: #f8fafc;
+    --fs-border: rgba(255, 255, 255, 0.1);
+}
+
+/* Sidebar Base */
+.fs-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--fs-sidebar-w);
+    height: 100%;
+    background: var(--fs-bg);
+    color: var(--fs-text);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out, background 0.3s ease;
+    z-index: 1000;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.25);
+    font-family: 'Verdana', sans-serif;
+    scrollbar-width: none;
+}
+
+/* Sidebar Header */
+.fs-sidebar-header {
+    flex: 0 0 50px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--fs-title);
+    border-bottom: 1px solid var(--fs-border);
+}
+.fs-sidebar-logo {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+/* Sidebar Body */
+.fs-sidebar-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Sidebar Footer */
+.fs-sidebar-footer {
+    flex: 0 0 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--fs-section);
+    border-top: 1px solid var(--fs-border);
+}
+
+/* Sidebar Links */
+.fs-sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.fs-sidebar-menu li {
+    padding: 2px 0;
+}
+.fs-sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 8px 20px;
+    text-decoration: none;
+    font-size: 14px;
+    color: var(--fs-text);
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.fs-sidebar-link i {
+    width: 20px;
+    text-align: center;
+}
+.fs-sidebar-link span {
+    margin-left: 10px;
+}
+.fs-sidebar-link:hover {
+    background: var(--fs-hover-bg);
+    color: var(--fs-hover-text);
+}
+.fs-sidebar-link.active {
+    background: var(--fs-active-bg);
+    font-weight: 600;
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+}
+
+/* Section Headers */
+.fs-sidebar-section {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 8px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--fs-section);
+    cursor: pointer;
+    user-select: none;
+}
+.fs-sidebar-section.collapsed .fs-toggle-icon {
+    transform: rotate(-90deg);
+}
+.fs-toggle-icon {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+/* Mobile Toggle Button */
+#fs-sidebar-toggle-btn {
+    position: fixed;
+    top: 8px;
+    left: 12px;
+    background: var(--fs-btn-bg);
+    color: var(--fs-btn-text);
+    border: none;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 18px;
+    z-index: 1100;
+    display: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* 🔁 Responsive Design */
+@media (min-width: 769px) {
+    body {
+        padding-left: var(--fs-sidebar-w) !important;
+    }
+}
+@media (max-width: 768px) {
+    body {
+        padding-left: 0 !important;
+    }
+    .fs-sidebar {
+        transform: translateX(-100%);
+    }
+    .fs-sidebar.active {
+        transform: translateX(0);
+    }
+    #fs-sidebar-toggle-btn {
+        display: block;
+    }
+}
