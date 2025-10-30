@@ -171,7 +171,7 @@
    "link_fieldname": "consignment"
   }
  ],
- "modified": "2025-10-23 14:13:07.925332",
+ "modified": "2025-10-30 11:37:13.578073",
  "modified_by": "Administrator",
  "module": "ContiShip ERP",
  "name": "Inward Entry",
@@ -195,5 +195,6 @@
  "search_fields": "boeinvoice_no",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

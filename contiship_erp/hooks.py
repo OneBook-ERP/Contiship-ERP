@@ -151,6 +151,11 @@ app_license = "mit"
 # ]
 
 
+# app_include_css = [
+#     "/assets/contiship_erp/css/sidebar.css",
+#     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+# ]
+
 doctype_js = {
     "Item" : "public/js/item.js",
     "Customer" : "public/js/customer.js",
