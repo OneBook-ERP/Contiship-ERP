@@ -342,8 +342,8 @@ def create_monthly_additional_sqft_invoice(end=None):
 
 
 @frappe.whitelist()
-def generate_monthly_container_invoices(now=None, inward_doc=None, start=None):
-    frappe.log_error("start:",start)
+def generate_monthly_container_invoices(now=None, inward_doc=None):
+   
     frappe.log_error("now:",now)
     frappe.log_error("inward_doc:",inward_doc)
     
@@ -387,11 +387,11 @@ def generate_monthly_container_invoices(now=None, inward_doc=None, start=None):
                     getdate(entry.monthly_invoice_date).month != month or
                     getdate(entry.monthly_invoice_date).year != year
                 )
-                and (
-                    getdate(entry.arrival_date).month == month and
-                    getdate(entry.arrival_date).year == year
-                )
             ]
+                # and (
+                #     getdate(entry.arrival_date).month == month and
+                #     getdate(entry.arrival_date).year == year
+                # )
 
 
         try:
@@ -467,7 +467,7 @@ def generate_monthly_container_invoices(now=None, inward_doc=None, start=None):
                         frappe.log_error("arrival_date:" + str(arrival_date))
                         frappe.log_error("first_day:" + str(first_day))
                        
-                        if inward_doc and start==1 and now==1:
+                        if inward_doc and now:
                             start_date = arrival_date                     
                         else:
                             start_date = max(arrival_date, first_day) 
@@ -509,7 +509,7 @@ def generate_monthly_container_invoices(now=None, inward_doc=None, start=None):
                         if item.enable_875_rule or item.enable_75_rule:
                             current_start_date =""
 
-                            if inward_doc and start==1 and now==1:
+                            if inward_doc and now:
                                 current_start_date = arrival_date
                                 frappe.log_error("current_start_date", current_start_date)                     
                             else:
@@ -569,6 +569,7 @@ def generate_monthly_container_invoices(now=None, inward_doc=None, start=None):
                                 outward = frappe.get_doc("Outward Entry", row["parent"])
                                 outward.billed = 1
                                 outward.save()
+                                frappe.db.commit()
 
                             item_name = frappe.get_value("Item", item.service_type, "item_name")                
                             merged_slabs = []
@@ -610,7 +611,7 @@ def generate_monthly_container_invoices(now=None, inward_doc=None, start=None):
                             dispatched_total = sum(r["qty"] for r in outward_items if r.get("qty"))
                             actual_last_outward_date = final_outward_date
 
-                            if inward_doc and start and now:
+                            if inward_doc and now:
                                 arrival_date = arrival_date
                                 frappe.log_error("arrival_date1", arrival_date)                     
                             else:
@@ -652,6 +653,7 @@ def generate_monthly_container_invoices(now=None, inward_doc=None, start=None):
                                 outward = frappe.get_doc("Outward Entry", out_item["parent"])
                                 outward.billed = 1
                                 outward.save()
+                                frappe.db.commit()
                     
                         if dispatched_total < inward_qty and prev_end and prev_end < end_of_month:
                             frappe.log_error("dispatched_total", dispatched_total)
@@ -704,6 +706,32 @@ def generate_monthly_container_invoices(now=None, inward_doc=None, start=None):
                     )
                 invoice_items = [item for item in invoice_items if item.get("qty", 0) != 0]
                 frappe.log_error("Invoice Items After Filter ", invoice_items)
+
+                merged_items = {}
+                for item in invoice_items:
+                    key = (item["item_code"], item["rate"], item["custom_container_name"])
+                    if key not in merged_items:
+                        merged_items[key] = item.copy()
+                    else:                       
+                        merged_items[key]["qty"] += item["qty"]
+                
+                        existing_from = merged_items[key].get("custom_bill_from_date")
+                        existing_to = merged_items[key].get("custom_bill_to_date")
+                        new_from = item.get("custom_bill_from_date")
+                        new_to = item.get("custom_bill_to_date")
+                        merged_items[key]["custom_bill_from_date"] = min(existing_from, new_from)
+                        merged_items[key]["custom_bill_to_date"] = max(existing_to, new_to)
+                        
+                        merged_items[key]["description"] = (
+                            f"From {merged_items[key]['custom_bill_from_date'].strftime('%d-%m-%Y')} "
+                            f"to {merged_items[key]['custom_bill_to_date'].strftime('%d-%m-%Y')}"
+                        )
+                
+                invoice_items = list(merged_items.values())
+
+                frappe.log_error("Invoice Items After Merge ", invoice_items)
+
+                
                 if not invoice_items:
                     frappe.log_error("No invoice items generated.")
                 
@@ -725,6 +753,7 @@ def generate_monthly_container_invoices(now=None, inward_doc=None, start=None):
 
                     inward.monthly_invoice_date = nowdate()
                     inward.save()
+                    frappe.db.commit()
 
                 frappe.log_error("Monthly Invoice Created")
             
