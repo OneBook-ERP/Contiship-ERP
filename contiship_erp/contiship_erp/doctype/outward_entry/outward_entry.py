@@ -1011,6 +1011,7 @@ def container_invoice(outward_entry):
         si.custom_invoice_type = "Storage"
         si.custom_consignment = inward.boeinvoice_no
         si.custom_inward_date = inward.sales_invoice_inward_date
+        si.custom_inward_description = inward.description
         si.set("items", invoice_items)   
         si.insert()
 

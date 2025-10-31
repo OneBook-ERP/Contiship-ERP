@@ -10,7 +10,7 @@ def execute(filters=None):
     return columns, data
 
 def get_columns():
-    return [
+    return [        
         {"label": "Inward Entry ID", "fieldname": "id", "fieldtype": "Link", "options": "Inward Entry", "width": 150},
         {"label": "Consignment", "fieldname": "boeinvoice_no", "fieldtype": "Data", "width": 130},
         {"label": "Arrival Date", "fieldname": "container_arrival_date", "fieldtype": "Date", "width": 110},
