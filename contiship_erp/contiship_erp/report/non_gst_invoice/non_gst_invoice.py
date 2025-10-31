@@ -10,6 +10,7 @@ def execute(filters=None):
 
 def get_columns():
     return [
+        {"label": "", "fieldname": "print_icon", "fieldtype": "Data", "width": 30},
         {"label": "Invoice No", "fieldname": "name", "fieldtype": "Link", "options": "Sales Invoice", "width": 150},
         {"label": "Posting Date", "fieldname": "posting_date", "fieldtype": "Date", "width": 120},
         {"label": "Customer", "fieldname": "customer", "fieldtype": "Link", "options": "Customer", "width": 250},

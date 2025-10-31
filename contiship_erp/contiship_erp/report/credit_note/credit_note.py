@@ -10,6 +10,8 @@ def execute(filters=None):
 
 def get_columns():
     return [
+        {"label": "", "fieldname": "print_icon", "fieldtype": "Data", "width": 30},
+        {"label": "", "fieldname": "invoiced", "fieldtype": "Data", "width": 30},
         {"label": "Invoice No", "fieldname": "name", "fieldtype": "Link", "options": "Sales Invoice", "width": 150},
         {"label": "Posting Date", "fieldname": "posting_date", "fieldtype": "Date", "width": 120},
         {"label": "Customer", "fieldname": "customer", "fieldtype": "Link", "options": "Customer", "width": 250},
@@ -20,6 +22,8 @@ def get_columns():
         {"label": "Outstanding", "fieldname": "outstanding_amount", "fieldtype": "Currency", "width": 130},
         {"label": "Status", "fieldname": "status", "width": 120},
         {"label": "Invoice Type", "fieldname": "custom_invoice_type", "width": 140},
+         {"label": "Acknowledgement No", "fieldname": "acknowledgement_number", "width": 150},
+        {"label": "Acknowledgement Date", "fieldname": "acknowledged_on", "fieldtype": "Date", "width": 150},
         {"label": "Inward Entry", "fieldname": "custom_reference_docname", "fieldtype": "Link", "options": "Inward Entry", "width": 150},
         {"label": "Inward Date", "fieldname": "custom_inward_date", "fieldtype": "Date", "width": 120},
         {"label": "Created On", "fieldname": "creation", "fieldtype": "Date", "width": 140},
@@ -68,8 +72,12 @@ def get_data(filters):
             si.grand_total,
             si.outstanding_amount,
             si.status,
-            si.custom_invoice_type
+            si.custom_invoice_type,
+            eil.acknowledgement_number,
+            eil.acknowledged_on 
         FROM `tabSales Invoice` si
+        LEFT JOIN `tabe-Invoice Log` eil
+            ON eil.reference_name = si.name
         WHERE si.is_return = 1
         {conditions}
         ORDER BY si.name DESC

@@ -41,5 +41,22 @@ frappe.query_reports["Non GST Invoice"] = {
             "color": "#fff",
             "border-color": "#000"
         });
-    }
+    },
+    formatter: function(value, row, column, data, default_formatter) {
+      
+        if (column.fieldname === "print_icon") {
+            if (data && data.name) {
+                return `
+                    <a href="javascript:void(0)" 
+                        onclick="frappe.set_route('print', 'Sales Invoice', '${data.name}')"
+                        title="Print Sales Invoice">
+                        <i class="fa fa-print" style="cursor:pointer; color:#000;"></i>
+                    </a>`;
+            }
+            return "";
+        }
+
+   
+        return default_formatter(value, row, column, data);
+    },
 };

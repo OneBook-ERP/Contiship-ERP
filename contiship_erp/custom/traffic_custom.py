@@ -498,13 +498,18 @@ def generate_monthly_container_invoices(now=None, inward_doc=None):
                             "custom_container": container,
                             "custom_container_name": container_name,
                             "custom_container_status": "Pending",
-                            "custom_invoice_type": "Monthly Billing"                    
+                            "custom_invoice_type": "Monthly Billing",
+                            "custom_outward_qty": 0                   
                         })
                         all_dates.extend([start_date, end_date])
                     else:
 
                         dispatched_total = 0
                         prev_end = None
+
+                        if month_invoice_details:
+                            dispatched_total = get_billed_qty(container, container_name, inward.name, inward.boeinvoice_no)
+                            frappe.log_error("mmdispatched_total", dispatched_total)
 
                         if item.enable_875_rule or item.enable_75_rule:
                             current_start_date =""
@@ -517,9 +522,7 @@ def generate_monthly_container_invoices(now=None, inward_doc=None):
                                 frappe.log_error("current_start_date", current_start_date)
 
                             # current_start_date = arrival_date
-                            if month_invoice_details:
-                                dispatched_total = get_billed_qty(container, container_name, inward.name, inward.boeinvoice_no)
-                                frappe.log_error("wwdispatched_total", dispatched_total)
+                            
                             slabs = []
                     
                             final_outward_date = max(getdate(r["date"]) for r in outward_items)
@@ -599,7 +602,8 @@ def generate_monthly_container_invoices(now=None, inward_doc=None):
                                     "custom_container": container,
                                     "custom_container_name": container_name,                      
                                     "custom_container_status": "Completed" if dispatched_total >= inward_qty else "Partial",
-                                    "custom_invoice_type": "Monthly Billing",                        
+                                    "custom_invoice_type": "Monthly Billing",
+                                    "custom_outward_qty": dispatched_total                       
                                 })
                                 all_dates.extend([slab['from_date'], slab['to_date']])
                                 prev_end = slab['to_date']
@@ -607,8 +611,9 @@ def generate_monthly_container_invoices(now=None, inward_doc=None):
                         
 
                         if not item.enable_875_rule and not item.enable_75_rule:
+                            
                             final_outward_date = max(getdate(r["date"]) for r in outward_items)
-                            dispatched_total = sum(r["qty"] for r in outward_items if r.get("qty"))
+                            dispatched_total += sum(r["qty"] for r in outward_items if r.get("qty"))
                             actual_last_outward_date = final_outward_date
 
                             if inward_doc and now:
@@ -691,7 +696,8 @@ def generate_monthly_container_invoices(now=None, inward_doc=None):
                                     "custom_container": container,
                                     "custom_container_name": container_name,
                                     "custom_container_status": "Partial",
-                                    "custom_invoice_type": "Monthly Billing"
+                                    "custom_invoice_type": "Monthly Billing",
+                                    "custom_outward_qty": dispatched_total
                                 })
                                 all_dates.extend([start_date, end_date])
 
@@ -714,6 +720,7 @@ def generate_monthly_container_invoices(now=None, inward_doc=None):
                         merged_items[key] = item.copy()
                     else:                       
                         merged_items[key]["qty"] += item["qty"]
+                        merged_items[key]["custom_outward_qty"] += item["custom_outward_qty"]
                 
                         existing_from = merged_items[key].get("custom_bill_from_date")
                         existing_to = merged_items[key].get("custom_bill_to_date")
@@ -745,6 +752,7 @@ def generate_monthly_container_invoices(now=None, inward_doc=None):
                     si.custom_invoice_type = "Storage"
                     si.custom_consignment = inward.boeinvoice_no
                     si.custom_inward_date = inward.sales_invoice_inward_date
+                    si.custom_inward_description = inward.description
                     si.set("items", invoice_items)
                     si.custom_bill_from_date = min(all_dates) if all_dates else first_day
                     si.custom_bill_to_date = max(all_dates) if all_dates else end_of_month
