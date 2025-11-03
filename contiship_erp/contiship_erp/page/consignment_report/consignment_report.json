@@ -1,0 +1,29 @@
+{
+ "content": null,
+ "creation": "2025-10-31 21:21:24.920431",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2025-10-31 21:21:24.920431",
+ "modified_by": "Administrator",
+ "module": "ContiShip ERP",
+ "name": "consignment-report",
+ "owner": "Administrator",
+ "page_name": "consignment-report",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Manager"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 1,
+ "title": "Consignment Report"
+}
