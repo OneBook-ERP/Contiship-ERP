@@ -188,6 +188,10 @@ scheduler_events = {
     }
 }
 
+override_doctype_class = {
+    "Payment Entry": "contiship_erp.custom.traffic_custom.CustomPaymentEntry"
+}
+
 # Scheduled Tasks
 # ---------------
 
